@@ -100,6 +100,48 @@ get_covid_data <- function(min_death=10, from_cache=TRUE) {
   d
 }
 
-Get_Danielle_data <- function() {
+get_Danielle_data <- function() {
+  d <- read.csv('./data/Corona_BCG_edited_table_2020_04_10.csv', check.names = FALSE)
+  # Convert contries names
+  d$Country <- stringr::str_to_title(d$COUNTRY)
+  d$Country[d$Country == 'Czech'] <- 'Czechia'
+  d$Country[d$Country == 'Uk'] <- 'United Kingdom'
+  d$Country[d$Country == 'Usa'] <- 'US'
+  d$Country[d$Country == 'Bosnia And Herzegovina'] <- 'Bosnia and Herzegovina'
+  d$Country[d$Country == 'South Korea'] <- 'Korea, South'
+  d$Country <- as.factor(d$Country)
+  rownames(d) <- d$Country
+  d$COUNTRY <- NULL
+  names(d)[names(d) == "TB cases by brackets"] <- 'TBcases5Groups'
+  d$TBcases5Groups <- factor(d$TBcases5Groups, 
+                             labels = c('<10', '11-20', '21-50', '50-100', '100-200'))
+  names(d)[names(d) == "Two BCG groups"] <- 'TBcases2Groups'
+  d$TBcases2Groups <- factor(d$TBcases2Groups, 
+                             labels = c('reccomendation for specific groups',
+                                        'Current/ past national BCG vaccination policy for all'))
+  names(d)[names(d) == "3 BCG groups"] <- 'TBcases3Groups'
+  d$TBcases3Groups <- factor(d$TBcases3Groups)
   
+  names(d)[names(d) == "income group brackets"] <- 'IncomeGroup'
+  d$IncomeGroup <- factor(d$IncomeGroup, 
+                             labels = c('high income', 'Upper middle income',
+                                        'lower middle income'))
+  d
+}
+
+data_per_milion <- function(covid, countries) {
+  tmp <- apply(covid, 1, function(x)
+    as.numeric(x[3])/countries[as.character(x[1]), 'population size (M)'])
+  covid$value <- tmp
+  levels(covid$Var) <- paste0(levels(covid$Var), 'PerM')
+  covid
+}
+
+get_covid_normalized <- function() {
+  covid <- get_covid_data()
+  countries <- get_Danielle_data()
+  covid <- droplevels(covid[covid$Country %in% levels(countries$Country),])
+  countries <- droplevels(countries[countries$Country %in% levels(covid$Country),])
+  covid <- rbind(covid, data_per_milion(covid, countries))
+  covid
 }

@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 .httr-oauth
+rsconnect
+Untitled.ipynb
+.ipynb_checkpoints
+.DS_Store

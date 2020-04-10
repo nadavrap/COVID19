@@ -8,7 +8,7 @@ theme_set(theme_bw())
 
 #d <- get_raw_data()
 #df <- to_long(d)
-df <- get_covid_data()
+covid <- get_covid_normalized()
 
 fluidPage(
     theme = shinytheme("superhero"),
@@ -18,16 +18,16 @@ fluidPage(
         width = 3,
         
         #selectInput('x', 'X', names(d)),
-        selectInput('y', 'Variable to plot', unique(df$Var), unique(df$Var)[[1]]),
+        selectInput('y', 'Variable to plot', unique(covid$Var), unique(covid$Var)[[1]]),
         #selectInput('color', 'Color', c('None', names(d))),
         
-        sliderInput('ylim', 'Limit Y axis', min=0, max=max(df$value[df$Var=='deaths']),
-                     value=max(df$value[df$Var=='deaths']), step=1, round=0),
+        sliderInput('ylim', 'Limit Y axis', min=0, max=max(covid$value[covid$Var=='deaths']),
+                     value=max(covid$value[covid$Var=='deaths']), step=1, round=0),
         
         checkboxInput('logscale', 'Log 10 Scale', value = FALSE),
         selectInput("countries", "Select countries",
-                    choices = levels(df$Country),
-                    selected = levels(df$Country),
+                    choices = levels(covid$Country),
+                    selected = levels(covid$Country),
                     multiple = TRUE
         ),
         #checkboxInput('smooth', 'Smooth'),
@@ -37,8 +37,15 @@ fluidPage(
     ),
     
     mainPanel(
-        paste("Contries are alingned so day 0 is the first day when the",
+        paste("countries are alingned so day 0 is the first day when the",
         "country passed 10 commulative death from COVID-19."),
-        plotOutput('plot')
+        # Output: Tabset w/ plot, summary, and table ----
+        tabsetPanel(type = "tabs",
+                    tabPanel("Plot", plotOutput("plot"))#,
+                    #tabPanel("Summary", verbatimTextOutput("summary")),
+                    #tabPanel("Table", tableOutput("table"))
+        )
+        
+        #plotOutput('plot')
     )
 )
