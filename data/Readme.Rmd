@@ -1,0 +1,4 @@
+latest.csv - Downloaded from https://github.com/beoutbreakprepared/nCoV2019/blob/master/latest_data/latestdata.cs
+  Data by city and provice.
+  
+who_covid_19_sit_rep_time_series.csv - Downloaded from https://github.com/CSSEGISandData/COVID-19/tree/master/who_covid_19_situation_reports/who_covid_19_sit_rep_time_series
