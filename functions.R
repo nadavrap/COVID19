@@ -1,4 +1,9 @@
 library(tidyr)
+library(stringr)
+library(polycor) # for hetcor function
+library(ggpubr) # For ggarrange function
+
+# options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
 
 get_raw_data <- function() {
   # library(googlesheets)
@@ -31,7 +36,7 @@ to_long <- function(d) {
   df$Country <- d$COUNTRY
   df <- tidyr::gather(df, var, value, `infected_10d`:`per_death_of_infected_growth_30d`, factor_key=TRUE)
   df$value <- as.numeric(df$value)
-  df$Days <- as.integer(stringr::str_extract(string = df$var, pattern = "[0-9]0"))
+  df$Days <- as.integer(str_extract(string = df$var, pattern = "[0-9]0"))
   df$Var <- gsub('_[1-9]0d','', df$var)
   df
 }
@@ -101,31 +106,41 @@ get_covid_data <- function(min_death=10, from_cache=TRUE) {
 }
 
 get_Danielle_data <- function() {
-  d <- read.csv('./data/Corona_BCG_edited_table_2020_04_10.csv', check.names = FALSE)
+  #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_10.csv', check.names = FALSE)
+  d <- read.csv('./data/Corona_BCG_edited_table_2020_04_11.csv', check.names = FALSE)
+  # Ingore first emtpy row and on
+  d <- d[1:(which(d$COUNTRY=='')[1]-1),]
   # Convert contries names
   d$Country <- stringr::str_to_title(d$COUNTRY)
   d$Country[d$Country == 'Czech'] <- 'Czechia'
-  d$Country[d$Country == 'Uk'] <- 'United Kingdom'
-  d$Country[d$Country == 'Usa'] <- 'US'
-  d$Country[d$Country == 'Bosnia And Herzegovina'] <- 'Bosnia and Herzegovina'
-  d$Country[d$Country == 'South Korea'] <- 'Korea, South'
+  d$Country[d$Country == 'Uk'] <- 'UK'
+  d$Country[d$Country == 'Usa'] <- 'USA'
+  #d$Country[d$Country == 'Bosnia And Herzegovina'] <- 'Bosnia and Herzegovina'
+  d$Country[d$Country == 'South Korea'] <- 'S.Korea'
   d$Country <- as.factor(d$Country)
   rownames(d) <- d$Country
   d$COUNTRY <- NULL
   names(d)[names(d) == "TB cases by brackets"] <- 'TBcases5Groups'
   d$TBcases5Groups <- factor(d$TBcases5Groups, 
-                             labels = c('<10', '11-20', '21-50', '50-100', '100-200'))
-  names(d)[names(d) == "Two BCG groups"] <- 'TBcases2Groups'
-  d$TBcases2Groups <- factor(d$TBcases2Groups, 
+                             labels = c('<10', '11-20', '21-50', '50-100', '100-200'),
+                             ordered = TRUE)
+  names(d)[names(d) == "Two BCG groups"] <- 'BCG2Groups'
+  d$BCG2Groups <- factor(d$BCG2Groups, 
                              labels = c('reccomendation for specific groups',
-                                        'Current/ past national BCG vaccination policy for all'))
-  names(d)[names(d) == "3 BCG groups"] <- 'TBcases3Groups'
-  d$TBcases3Groups <- factor(d$TBcases3Groups)
+                                        'Current/past BCG policy for all'),
+                             ordered = TRUE)
+  names(d)[names(d) == "3 BCG groups"] <- 'BCG3Groups'
+  d$BCG3Groups <- factor(d$BCG3Groups, ordered = TRUE)
   
   names(d)[names(d) == "income group brackets"] <- 'IncomeGroup'
   d$IncomeGroup <- factor(d$IncomeGroup, 
                              labels = c('high income', 'Upper middle income',
-                                        'lower middle income'))
+                                        'lower middle income'),
+                          ordered = TRUE)
+  # date of 1 sick per 1M
+  # "Feb 22"  -> date
+  d$Date_1st_sick_perM <- as.Date(d$`date of 1 sick per 1M`, format='%b %d')
+  d$`date of 1 sick per 1M` <- NULL
   d
 }
 
@@ -144,4 +159,105 @@ get_covid_normalized <- function() {
   countries <- droplevels(countries[countries$Country %in% levels(covid$Country),])
   covid <- rbind(covid, data_per_milion(covid, countries))
   covid
+}
+
+get_worldometers_data <- function() {
+  covid <- read.csv('./data/world_metes_COVID_data_all_dates.csv', check.names = FALSE)
+  names(covid)[names(covid)=='Country.Other'] <- 'Country'
+  # There are country names with leading spaces
+  covid$Country <- gsub('^ ', '', covid$Country)
+  covid$Country <- gsub(' $', '', covid$Country)
+  covid$Country[covid$Country == 'BosniaandHerzegovina'] <- "Bosnia And Herzegovina"
+  covid$Country[covid$Country == 'DominicanRepublic'] <- "Dominican Republic"
+  if (names(covid)[1]=='') {
+    covid[,1] <- NULL
+  }
+  covid$X <- NULL
+  # 223 -> February second
+  # First, integer to character, and then add space on second character
+  covid$Date <- gsub('^([0-9]{1})([0-9]{2})$', '\\1 \\2', as.character(covid$Date))
+  covid$Date <- as.Date(covid$Date, format='%m %d')
+  # Many -1s, repalce with NA
+  covid[covid==-1] <- NA
+  covid$start_date <- NULL
+  covid
+}
+
+
+align_by_var_and_val <- function(covid, var, value) {
+  tmp <- covid[!is.na(covid[,var]) & covid[,var] >= value, c('Country', var, 'Date')]
+  tmp <- tmp[order(tmp$Date),]
+  tmp <- tmp[!duplicated(tmp$Country),c('Country', 'Date')]
+  #key_dates <- as.Date(tmp2, origin='1970-01-01')
+  #key_dates <- key_dates[!is.na(key_dates)]
+  key_dates <- setNames(tmp$Date, tmp$Country)
+  
+  covid <- covid[covid$Country %in% names(key_dates),]
+  for (country in names(key_dates)) {
+    covid[covid$Country == country, 'Days'] <- 
+      as.integer(covid[covid$Country == country, 'Date'] - key_dates[country],
+                 units='days')
+  }
+  #covid <- covid[covid$Days >= 0,]
+  droplevels(covid)
+}
+
+aggregate_and_merge_countries <- function(worldometer, var, days) {
+  y <- worldometer[worldometer$Days %in% c(0,days), c('Country', var, 'Days')]
+  y <- y[!is.na(y[,var]),]
+  # Remove those with no two datapoints
+  y <- y[y$Country %in% y$Country[duplicated(y$Country)],]
+  y <- aggregate(as.formula(paste(var, '~ Country')), y, function(x) max(x)-min(x))
+  x <- get_Danielle_data()
+  x <- droplevels(merge(x,y))
+  x$Date_1st_sick_perM <- NULL
+  #countries <- x$Country
+  x$Country <- NULL
+  # Remove columns handwash as many NAs
+  x$`handwash%` <- NULL
+  x
+}
+
+regress <- function(worldometer, var, days) {
+  x <- aggregate_and_merge_countries(worldometer, var, days)
+  #vars <- names(x)
+  #names(x)[1:22] <- letters[1:22]
+  #res <- lm(as.formula(paste(var, '~.')), x)
+  suppressWarnings({
+    tmp <- hetcor(x[,2:ncol(x)])
+  })
+  cors <- data.frame(Var=names(x)[2:ncol(x)],
+                Cor=tmp$correlations[,ncol(x)-1], 
+                Pval=tmp$tests[ncol(x)-1,])
+  cors <- cors[complete.cases(cors),]
+  droplevels(cors[1:(nrow(cors)-1),])
+}
+
+outcome_plot <- function(x, var) {
+  #comp <- expand.grid(levels(x$TBcases5Groups), levels(x$TBcases5Groups))
+  comp_list <- function(n) {
+    l <- 1:n
+    comp <- expand.grid(l,l)
+    comp <- comp[comp[,1] < comp[,2],]
+    comp <- apply(comp, 1, list)
+    comp <- lapply(comp, function(i) i[[1]])
+  }
+  
+  #comp <- lapply(1:2, function(i) lapply((i+1):3, function(j) c(i,j)))
+  levels(x$BCG2Groups) <- gsub(" ", "\n", levels(x$BCG2Groups))
+  g1 <- ggboxplot(x, x = "BCG2Groups", y = var, color = "BCG2Groups", add = c("jitter"), palette = "jco") + 
+    stat_compare_means() +
+    theme(legend.position = "none", plot.margin = unit(c(1,1,1,1), "lines"))
+  g2 <- ggboxplot(x, x = "BCG3Groups", y = var, color = "BCG3Groups", add = c("jitter"), palette = "jco") + 
+    stat_compare_means() + 
+    stat_compare_means(comparisons = comp_list(nlevels(x$BCG3Groups))) +
+    theme(legend.position = "none", plot.margin = unit(c(1,1,1,1), "lines"))
+  g3 <- ggboxplot(x, x = "TBcases5Groups", y = var, color = "TBcases5Groups", add = c("jitter"), palette = "jco") +
+    stat_compare_means() +
+    stat_compare_means(comparisons = comp_list(nlevels(x$TBcases5Groups))) +
+    theme(legend.position = "none", plot.margin = unit(c(1,1,1,1), "lines"))
+  ggarrange(g1, g2, g3, 
+            labels = c("A", "B", "C"),
+            ncol = 2, nrow = 2,
+            heights = c(8, 8), align = "v")
 }
