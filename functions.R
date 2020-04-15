@@ -5,6 +5,9 @@ library(ggpubr) # For ggarrange function
 
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
 
+DEFAULT_MIN_VAL <- 1
+
+
 get_raw_data <- function() {
   # library(googlesheets)
   # gs_auth(new_user = TRUE)
@@ -107,9 +110,11 @@ get_covid_data <- function(min_death=10, from_cache=TRUE) {
 
 get_Danielle_data <- function() {
   #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_10.csv', check.names = FALSE)
-  d <- read.csv('./data/Corona_BCG_edited_table_2020_04_11.csv', check.names = FALSE)
+  #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_11.csv', check.names = FALSE)
+  #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_12.csv', check.names = FALSE)
+  d <- read.csv('./data/Corona_BCG_edited_table_2020_04_14.csv', check.names = FALSE)
   # Ingore first emtpy row and on
-  d <- d[1:(which(d$COUNTRY=='')[1]-1),]
+  d <- droplevels(d[1:(which(d$COUNTRY=='')[1]-1),])
   # Convert contries names
   d$Country <- stringr::str_to_title(d$COUNTRY)
   d$Country[d$Country == 'Czech'] <- 'Czechia'
@@ -124,6 +129,7 @@ get_Danielle_data <- function() {
   d$TBcases5Groups <- factor(d$TBcases5Groups, 
                              labels = c('<10', '11-20', '21-50', '50-100', '100-200'),
                              ordered = TRUE)
+  d$TB_high <- d$TBcases5Groups != '<10'
   names(d)[names(d) == "Two BCG groups"] <- 'BCG2Groups'
   d$BCG2Groups <- factor(d$BCG2Groups, 
                              labels = c('reccomendation for specific groups',
@@ -161,8 +167,14 @@ get_covid_normalized <- function() {
   covid
 }
 
+get_raw_worldometer_data <- function() {
+  source('./worldometers_extract.R')
+  d <- get_worlodmeters_raw_data()
+}
+
 get_worldometers_data <- function() {
-  covid <- read.csv('./data/world_metes_COVID_data_all_dates.csv', check.names = FALSE)
+  #covid <- read.csv('./data/world_metes_COVID_data_all_dates.csv', check.names = FALSE)
+  covid <- get_raw_worldometer_data()
   names(covid)[names(covid)=='Country.Other'] <- 'Country'
   # There are country names with leading spaces
   covid$Country <- gsub('^ ', '', covid$Country)
@@ -180,6 +192,8 @@ get_worldometers_data <- function() {
   # Many -1s, repalce with NA
   covid[covid==-1] <- NA
   covid$start_date <- NULL
+  # Add columns death+critical
+  covid$death_or_critical_perM <- covid$critical_per_1M + covid$deaths_per_1M
   covid
 }
 
@@ -220,17 +234,38 @@ aggregate_and_merge_countries <- function(worldometer, var, days) {
 
 regress <- function(worldometer, var, days) {
   x <- aggregate_and_merge_countries(worldometer, var, days)
+  # Remove columns if single levels appears
+  x <- x[,sapply(x, nlevels) != 1]
   #vars <- names(x)
   #names(x)[1:22] <- letters[1:22]
   #res <- lm(as.formula(paste(var, '~.')), x)
+  cols_with_na <- sapply(x, anyNA)
   suppressWarnings({
-    tmp <- hetcor(x[,2:ncol(x)])
+    tmp <- tryCatch(
+      {
+        hetcor(x[,!cols_with_na], use = 'pairwise.complete.obs')
+      },
+      error=function(cond) {
+        return(NULL)
+      })
   })
-  cors <- data.frame(Var=names(x)[2:ncol(x)],
-                Cor=tmp$correlations[,ncol(x)-1], 
-                Pval=tmp$tests[ncol(x)-1,])
+  if (is.null(tmp)) {
+    warning(paste('Could not compute correlations. Had only',
+                  nrow(x), 'countries.'))
+    return(NULL)
+  }
+  cors <- data.frame(Var=names(tmp$correlations[1,]),
+                Cor=tmp$correlations[,ncol(tmp$correlations)], 
+                Pval=tmp$tests[ncol(tmp$tests),])
   cors <- cors[complete.cases(cors),]
-  droplevels(cors[1:(nrow(cors)-1),])
+  if (sum(cols_with_na)) {
+    bcgcor <- cor.test(x$`BCG administration years`, x[,var], use = 'pairwise.complete.obs', method = 'pearson')
+    cors <- rbind(cors, 
+                  data.frame(Var='BCG administration years', Cor=bcgcor$estimate, 
+                             Pval=bcgcor$p.value))
+    rownames(cors)[nrow(cors)] <- 'BCG administration years'
+  }
+  droplevels(cors[cors$Var != var,])
 }
 
 outcome_plot <- function(x, var) {
@@ -247,17 +282,70 @@ outcome_plot <- function(x, var) {
   levels(x$BCG2Groups) <- gsub(" ", "\n", levels(x$BCG2Groups))
   g1 <- ggboxplot(x, x = "BCG2Groups", y = var, color = "BCG2Groups", add = c("jitter"), palette = "jco") + 
     stat_compare_means() +
-    theme(legend.position = "none", plot.margin = unit(c(1,1,1,1), "lines"))
+    theme(legend.position = "none")
+  #, plot.margin = unit(c(1,1,1,1), "lines")
   g2 <- ggboxplot(x, x = "BCG3Groups", y = var, color = "BCG3Groups", add = c("jitter"), palette = "jco") + 
-    stat_compare_means() + 
-    stat_compare_means(comparisons = comp_list(nlevels(x$BCG3Groups))) +
-    theme(legend.position = "none", plot.margin = unit(c(1,1,1,1), "lines"))
+    stat_compare_means(label.y = min(x[,var])) + 
+    stat_compare_means(comparisons = comp_list(nlevels(x$BCG3Groups)),
+                       label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+    theme(legend.position = "none") +
+    #, plot.margin = unit(c(2,0,0,0), "lines")
+    expand_limits(y=max(x[,var])*1.2)
   g3 <- ggboxplot(x, x = "TBcases5Groups", y = var, color = "TBcases5Groups", add = c("jitter"), palette = "jco") +
+    stat_compare_means(label.y = min(x[,var])) +
+    stat_compare_means(comparisons = comp_list(nlevels(x$TBcases5Groups)),
+                       label.y = max(x[,var])*c(.9,1,.8,1.1,.95)) +
+    theme(legend.position = "none")+
+    expand_limits(y=max(x[,var])*1.2)
+  
+  g5 <- ggboxplot(x, x = "TB_high", y = var, color = "TB_high", add = c("jitter"), palette = "jco") +
     stat_compare_means() +
-    stat_compare_means(comparisons = comp_list(nlevels(x$TBcases5Groups))) +
-    theme(legend.position = "none", plot.margin = unit(c(1,1,1,1), "lines"))
-  ggarrange(g1, g2, g3, 
-            labels = c("A", "B", "C"),
-            ncol = 2, nrow = 2,
-            heights = c(8, 8), align = "v")
+    theme(legend.position = "none")+
+    expand_limits(y=max(x[,var])*1.2)
+  
+  # Correlated BCG administration years with outcome
+  names(x)[names(x) == "BCG administration years"] <- "BCG_administration_years"
+  #suppressWarnings({
+  gscatter <- ggscatter(data=x, x = "BCG_administration_years", y = var,
+                    add = "reg.line",  # Add regressin line
+                    add.params = list(color = "blue", fill = "lightgray"),
+                    conf.int = TRUE # Add confidence interval
+    ) + stat_cor(method = "pearson")#, label.x = 3, label.y = 30
+  
+  names(x)[names(x) == "Active_TB_%"] <- "Percents_Active_TB"
+  gscatterTB <- ggscatter(data=x, x = "Percents_Active_TB", y = var,
+                        add = "reg.line",  # Add regressin line
+                        add.params = list(color = "blue", fill = "lightgray"),
+                        conf.int = TRUE # Add confidence interval
+  ) + stat_cor(method = "pearson")#, label.x = .02, label.y = 30
+  #})
+  
+  ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,
+            labels = LETTERS[1:4],
+            ncol = 3, nrow = 2)
+}
+
+get_ecdc_data <- function() {
+  data <- utils::read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", 
+                   na.strings="", fileEncoding="UTF-8-BOM")
+}
+
+
+
+
+main <- function() {
+  rm(list=ls())
+  #source('~/Dropbox (BGU)/COVID19/functions.R')
+  covid <- get_worldometers_data()
+  covid <- get_worldometers_data()
+  var_align <- 'deaths_per_1M'
+  var_outcome <- 'critical_per_1M'#'deaths_per_1M' #
+  days_align <- DEFAULT_MIN_VAL
+  days_outcome <- 20
+  covid <- align_by_var_and_val(covid, var=var_align, days_align)
+  covid <- covid[!is.na(covid[,var_outcome]), ]
+  covid <- droplevels(covid)
+  x <- aggregate_and_merge_countries(covid, var_outcome, days_outcome) 
+  cors <- regress(covid, var_outcome, days_outcome)
+  outcome_plot(x, var = var_outcome)
 }
