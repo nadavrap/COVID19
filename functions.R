@@ -2,10 +2,12 @@ library(tidyr)
 library(stringr)
 library(polycor) # for hetcor function
 library(ggpubr) # For ggarrange function
+library(forcats) # For fct_rev function
+library(jtools) # for summ function
 
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
 
-DEFAULT_MIN_VAL <- 1
+DEFAULT_MIN_VAL <- .5
 
 
 get_raw_data <- function() {
@@ -176,6 +178,7 @@ get_worldometers_data <- function() {
   #covid <- read.csv('./data/world_metes_COVID_data_all_dates.csv', check.names = FALSE)
   covid <- get_raw_worldometer_data()
   names(covid)[names(covid)=='Country.Other'] <- 'Country'
+  covid$deaths_per_0.5M <- NULL
   # There are country names with leading spaces
   covid$Country <- gsub('^ ', '', covid$Country)
   covid$Country <- gsub(' $', '', covid$Country)
@@ -331,20 +334,81 @@ get_ecdc_data <- function() {
 }
 
 
+get_stats <- function(covid, outcome, days) {
+  #outcome <- 'deaths_per_1M'
+  #days <- 20
+  
+  d <- droplevels(covid[!is.na(covid[, outcome]), ])
+  x <- aggregate_and_merge_countries(d, outcome, days) 
+  x <- x[,c("BCG administration years", outcome)]
+  x <- x[complete.cases(x),]
+  cor_res <- cor.test(x[,1], x[,2], use = 'complete.obs')
+  return(data.frame(cor=cor_res$estimate, pval=cor_res$p.value,n=nrow(x),
+                    Days=days))
+}
 
+get_stats_table_outcome <- function(covid, outcome) {
+  d <- as.data.frame(do.call(rbind,
+               lapply(seq(10, 30, 5),
+                      function(days) get_stats(covid, outcome, days))))
+  d$Outcome <- outcome
+  d
+}
+
+get_stats_table <- function(var_align, days_align) {
+  covid <- get_worldometers_data()
+  #var_align <- 'deaths_per_1M'
+  #days_align <- DEFAULT_MIN_VAL
+  covid <- align_by_var_and_val(covid, var=var_align, days_align)
+  
+  
+  outcomes <- c('deaths_per_1M', 'critical_per_1M', 'death_or_critical_perM',
+                'cases_per_1M')
+  d <- do.call(rbind,
+               lapply(outcomes, get_stats_table_outcome, covid=covid))
+
+  d$'-Log10Pval' <- round(-log10(d$pval))
+  d$Pval <- factor(ifelse(d$pval<0.001, '<0.001', ifelse(d$pval<0.01, '<0.01', ifelse(d$pval<0.05, '<0.05', '>=0.05'))))
+  d$Correlation <- round(d$cor, 2)
+  
+  ggplot(d,aes(x=Days,y= fct_rev(Outcome), fill = Pval,
+               label=Correlation))+
+    geom_point(aes(size=n), shape = 21)+
+    theme_bw() +
+    geom_text() +
+    scale_fill_brewer(palette="Set1") + scale_size(range = range(d$n), breaks = c(1,2,3,10,20,30)) + 
+    ylab('Outcome') +
+    ggtitle('Outcome\'s correlation to BCG administration period') + 
+    guides(size=guide_legend(title="Number of countries"))
+}
+
+multi_var <- function(covid, outcome, days) {
+  x <- aggregate_and_merge_countries(covid, outcome, days)
+  x$TBcases5Groups <- NULL
+  x <- droplevels(x[complete.cases(x),])
+  numeric_cols <- sapply(x, function(i) ! 'factor' %in% class(i))
+  xs <- sapply(x[,numeric_cols], scale)
+  x2 <- cbind(xs, x[,!numeric_cols])
+  res <- lm(as.formula(paste(outcome, '~ .')), x)
+  res2 <- lm(as.formula(paste(outcome, '~ .')), x2)
+  #res3 <- lmer(as.formula(paste(outcome, '~ .')), x)
+  #summ(res2)
+  coefplot::coefplot(res2, sort = "magnitude")
+}
 
 main <- function() {
   rm(list=ls())
-  #source('~/Dropbox (BGU)/COVID19/functions.R')
-  covid <- get_worldometers_data()
+  source('./functions.R')
   covid <- get_worldometers_data()
   var_align <- 'deaths_per_1M'
-  var_outcome <- 'critical_per_1M'#'deaths_per_1M' #
   days_align <- DEFAULT_MIN_VAL
-  days_outcome <- 20
   covid <- align_by_var_and_val(covid, var=var_align, days_align)
+  
+  var_outcome <- 'deaths_per_1M' #'critical_per_1M'#
   covid <- covid[!is.na(covid[,var_outcome]), ]
   covid <- droplevels(covid)
+  days_outcome <- 20
+  
   x <- aggregate_and_merge_countries(covid, var_outcome, days_outcome) 
   cors <- regress(covid, var_outcome, days_outcome)
   outcome_plot(x, var = var_outcome)

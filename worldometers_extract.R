@@ -5,11 +5,6 @@
 #setwd("/Users/dedeklinger/Desktop/COVID_BCG/date_files_world_meter")
 library(reticulate)
 library(dplyr)
-virtualenv_create(envname = 'python3_env', 
-                              python = 'python3')#/usr/bin/
-
-virtualenv_install('python3_env', 
-                               packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
 #use_python("python3", required = T)
 
 
@@ -18,6 +13,12 @@ get_worlodmeters_raw_data <- function() {
   if (file.exists(fname)) {
     return(readRDS(fname))
   }
+  
+  virtualenv_create(envname = 'python3_env', 
+                    python = 'python3')#/usr/bin/
+  
+  virtualenv_install('python3_env', 
+                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
   
   py_run_file("./worldometers_extract.py")
   #source_python("./worldometers_extract.py")

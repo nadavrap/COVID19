@@ -97,6 +97,14 @@ function(input, output, session) {
               )
     })
     
+    output$corPlot <- renderPlot({
+        get_stats_table(input$alignby, input$alignvalue)
+    })
+    
+    output$multivarOut <- renderPlot({
+        multi_var(worldo(), input$var2plot, input$maxDaysOutcome)
+    }, height=700)
+    
     observe({
         y <- input$y
         updateSliderInput(session, "ylim", value = max(dataset()[,'value']),
@@ -106,6 +114,21 @@ function(input, output, session) {
         y <- input$var2plot
         updateSliderInput(session, "ylim_plot", value = round(max(worldo()[,input$var2plot], na.rm = TRUE)),
                           min = 0, max = round(max(worldo()[,input$var2plot], na.rm = TRUE)), step = 1)
+    })
+    
+    observe({
+        y <- input$alignby
+        yval <- input$alignvalue
+        max_val <- round(max(worldo()[,input$alignby], na.rm = TRUE))
+        if (max_val > 1000) {
+            step <- 50
+            yval <- round(yval)
+        } else {
+            step <- .25
+            max_val <- 20
+        }
+        updateSliderInput(session, "alignvalue", value = yval,
+                          min = 0, max = max_val, step = step)
     })
     # observe({
     #     country_list <- input$alignby
