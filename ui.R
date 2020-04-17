@@ -11,7 +11,7 @@ theme_set(theme_bw())
 covid <- get_covid_normalized()
 worldometer <- get_worldometers_data()
 all_countries <- sort(unique(worldometer$Country))
-worldometer <- align_by_var_and_val(worldometer, var='deaths_per_1M', DEFAULT_MIN_VAL)
+worldometer <- align_by_var_and_val(worldometer, var='total_deaths_per_1M', DEFAULT_MIN_VAL)
 
 shinyUI(navbarPage("COVID19",
                    theme = shinytheme("superhero"),           
@@ -70,18 +70,18 @@ shinyUI(navbarPage("COVID19",
                     #width = 3,
                     selectInput('alignby', 'Align countries by variable', 
                                 names(worldometer)[2:(ncol(worldometer)-1)], 
-                                'deaths_per_1M'),
+                                'total_deaths_per_1M'),
                     sliderInput('alignvalue', 'Align countries by variable having at least:', 
                                 min=0, max=20,
                                 value=DEFAULT_MIN_VAL, step=.25, round=2),
                     #selectInput('x', 'X', names(d)),
                     selectInput('var2plot', 'Variable to plot', 
                                 names(worldometer)[2:(ncol(worldometer)-1)],
-                                "deaths_per_1M"),
+                                "total_deaths_per_1M"),
                     #selectInput('color', 'Color', c('None', names(d))),
                     
-                    sliderInput('ylim_plot', 'Limit Y axis', min=0, max=round(max(worldometer[,'deaths_per_1M'], na.rm = TRUE)),
-                                value=max(worldometer[,'deaths_per_1M'], na.rm=TRUE), step=1, round=0),
+                    sliderInput('ylim_plot', 'Limit Y axis', min=0, max=round(max(worldometer[,'total_deaths_per_1M'], na.rm = TRUE)),
+                                value=max(worldometer[,'total_deaths_per_1M'], na.rm=TRUE), step=1, round=0),
                     
                     #checkboxInput('log10scale', 'Log 10 Scale', value = FALSE),
                     selectInput("country_list", "Select countries",

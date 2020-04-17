@@ -196,7 +196,7 @@ get_worldometers_data <- function() {
   covid[covid==-1] <- NA
   covid$start_date <- NULL
   # Add columns death+critical
-  covid$death_or_critical_perM <- covid$critical_per_1M + covid$deaths_per_1M
+  #covid$death_or_critical_perM <- covid$critical_per_1M + covid$deaths_per_1M
   covid
 }
 
@@ -323,9 +323,24 @@ outcome_plot <- function(x, var) {
   ) + stat_cor(method = "pearson")#, label.x = .02, label.y = 30
   #})
   
-  ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,
+  names(x)[names(x) == "HIV_prevalence_19-45_yo"] <- "HIV_prevalence_19_45_yo"
+  gscatterHIV <- ggscatter(data=x, x = "HIV_prevalence_19_45_yo", y = var,
+                          add = "reg.line",  # Add regressin line
+                          add.params = list(color = "blue", fill = "lightgray"),
+                          conf.int = TRUE # Add confidence interval
+  ) + stat_cor(method = "pearson")#, label.x = .02, label.y = 30
+  
+  gscatterHIV2 <- ggscatter(data=x, x = "HIV_prevalence_19_45_yo", y = var,
+                           add = "reg.line",  # Add regressin line
+                           add.params = list(color = "blue", fill = "lightgray"),
+                           conf.int = TRUE) + 
+    xlim(0,min(max(x$HIV_prevalence_19_45_yo), 1.1)) +
+    ggtitle('HIV, outlier removed')
+    stat_cor(method = "pearson")
+  
+  ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,gscatterHIV,gscatterHIV2,
             labels = LETTERS[1:4],
-            ncol = 3, nrow = 2)
+            ncol = 3, nrow = 3)
 }
 
 get_ecdc_data <- function() {
@@ -362,8 +377,8 @@ get_stats_table <- function(var_align, days_align) {
   covid <- align_by_var_and_val(covid, var=var_align, days_align)
   
   
-  outcomes <- c('deaths_per_1M', 'critical_per_1M', 'death_or_critical_perM',
-                'cases_per_1M')
+  outcomes <- c('total_deaths_per_1M', 'critical_per_1M', 'total_recovered_per_1M',
+                'total_cases_per_1M')
   d <- do.call(rbind,
                lapply(outcomes, get_stats_table_outcome, covid=covid))
 
@@ -400,11 +415,11 @@ main <- function() {
   rm(list=ls())
   source('./functions.R')
   covid <- get_worldometers_data()
-  var_align <- 'deaths_per_1M'
+  var_align <- 'total_deaths_per_1M'
   days_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, days_align)
   
-  var_outcome <- 'deaths_per_1M' #'critical_per_1M'#
+  var_outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
   covid <- covid[!is.na(covid[,var_outcome]), ]
   covid <- droplevels(covid)
   days_outcome <- 20

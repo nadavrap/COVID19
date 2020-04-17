@@ -20,7 +20,11 @@ get_worlodmeters_raw_data <- function() {
   virtualenv_install('python3_env', 
                      packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
   
-  py_run_file("./worldometers_extract.py")
+  tryCatch({
+    py_run_file("./worldometers_extract.py")
+    }, error = function(e) {
+      warning('Could not run worldometes_extract.py')
+    })
   #source_python("./worldometers_extract.py")
   
   country_list <- c("Italy", "Belgium", "Netherlands", "Spain","France","Switzerland","Germany","Czechia",
@@ -62,15 +66,15 @@ get_worlodmeters_raw_data <- function() {
   
   all_dates_merge$TotalCases <- as.numeric(as.character(all_dates_merge$TotalCases))
   all_dates_merge$TotalDeaths <- as.numeric(as.character(all_dates_merge$TotalDeaths))
+  all_dates_merge$TotalRecovered <- as.numeric(as.character(all_dates_merge$TotalRecovered))
   all_dates_merge$Serious.Critical <- as.numeric(as.character(all_dates_merge$Serious.Critical))
   
   all_dates_merge <- all_dates_merge %>%
-    mutate(cases_per_1M = TotalCases / population.size..M.) %>%
-    mutate(deaths_per_1M = TotalDeaths / population.size..M.) %>%
-    mutate(deaths_per_0.5M = TotalDeaths / population.size..M. /2) %>%
+    mutate(total_cases_per_1M = TotalCases / population.size..M.) %>%
+    mutate(total_deaths_per_1M = TotalDeaths / population.size..M.) %>%
     mutate(critical_per_1M = Serious.Critical / population.size..M.) %>%
+    mutate(total_recovered_per_1M = TotalRecovered / population.size..M.) %>%
     select(-c(9,10))
   saveRDS(all_dates_merge, fname)
   all_dates_merge
-}  
-  
+}
