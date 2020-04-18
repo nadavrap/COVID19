@@ -3,6 +3,10 @@ library(ggplot2)
 library(directlabels)
 library(gridExtra) # for grid.arrange function
 
+library(rpart) # for decision tree
+library(rpart.plot)
+library(rattle) # for fancyRpartPlot function
+
 function(input, output, session) {
     
     dataset <- reactive({
@@ -99,6 +103,10 @@ function(input, output, session) {
     
     output$corPlot <- renderPlot({
         get_stats_table(input$alignby, input$alignvalue)
+    })
+    
+    output$decisionTree <- renderPlot({
+        decisionTree(worldo(), input$var2plot, input$maxDaysOutcome)
     })
     
     output$multivarOut <- renderPlot({

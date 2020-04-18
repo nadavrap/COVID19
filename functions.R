@@ -4,6 +4,9 @@ library(polycor) # for hetcor function
 library(ggpubr) # For ggarrange function
 library(forcats) # For fct_rev function
 library(jtools) # for summ function
+library(rpart) # for decision tree
+library(rpart.plot)
+library(rattle) # for fancyRpartPlot function
 
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
 
@@ -409,6 +412,22 @@ multi_var <- function(covid, outcome, days) {
   #res3 <- lmer(as.formula(paste(outcome, '~ .')), x)
   #summ(res2)
   coefplot::coefplot(res2, sort = "magnitude")
+}
+
+
+decisionTree <- function(covid, outcome, days) {
+  #warning(class(d))
+  d <- aggregate_and_merge_countries(covid, outcome, days)
+  fit <- rpart(as.formula(paste(outcome, '~ .')), data = d, 
+               control=rpart.control(maxdepth=5, # at most 1 split
+                        cp=0, # any positive improvement will do
+                        minsplit=1,
+                        minbucket=1, # even leaves with 1 point are accepted
+                        xval=0)) # I don't need crossvalidation
+  
+  #rpart.plot(fit, extra = 1, main=paste('Decistion tree for', outcome))
+  #prp(fit, main=paste('Decistion tree for', outcome),varlen=3)
+  fancyRpartPlot(fit, main=paste('Decistion tree for', outcome), sub="")
 }
 
 main <- function() {

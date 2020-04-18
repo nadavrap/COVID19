@@ -112,7 +112,8 @@ shinyUI(navbarPage("COVID19",
                                          textOutput("regression_output"),
                                          plotOutput("plotRegression")),
                                 tabPanel("Correlations", plotOutput("corPlot")),
-                                tabPanel('Multivariable', plotOutput('multivarOut'))
+                                tabPanel('Multivariable', plotOutput('multivarOut')),
+                                tabPanel('Decision Tree', plotOutput('decisionTree'))
                                 #tabPanel("Summary", verbatimTextOutput("summary")),
                                 #tabPanel("Table", tableOutput("table"))
                     )
