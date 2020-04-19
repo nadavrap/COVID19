@@ -117,16 +117,16 @@ get_Danielle_data <- function(remove_old_cohort_flag=TRUE) {
   #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_14.csv', check.names = FALSE)
   cache_fname <- 'data/latest_download.rds'
   cache_fname_date <- 'data/latest_download_date.txt'
-  if(file.exists(cache_fname) & 
+  if(file.exists(cache_fname) && file.exists(cache_fname_date) &&
      readLines(cache_fname_date) == as.character(Sys.Date())){
     return(readRDS(cache_fname))
   }
   
   d <- read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQLpKsvPNrQaJmCu4zdr1oLnZjcl9B3UiNv29BFQTnACrBQ5CAl19N5ZvSv3WfGclSiuL-t3rEWFSqa/pub?gid=1666407311&single=true&output=csv',
                     check.names=FALSE)
-  if (remove_old_cohort_flag) {
-    d$`Old country cohort` <- NULL
-  }
+  d$CountrySet <- factor(ifelse(d$`Old country cohort` == 1, 'A', 'B'))
+  d$`Old country cohort` <- NULL
+  
   if ('Active_TB_.' %in% names(d)) {
     names(d)[names(d) == 'Active_TB_.'] <- 'Percents_Active_TB'
   }
@@ -139,8 +139,8 @@ get_Danielle_data <- function(remove_old_cohort_flag=TRUE) {
   # Convert contries names
   d$Country <- stringr::str_to_title(d$COUNTRY)
   d$Country[d$Country == 'Czech'] <- 'Czechia'
-  d$Country[d$Country == 'Uk'] <- 'UK'
-  d$Country[d$Country == 'Usa'] <- 'USA'
+  d$Country[d$Country %in% c('Uk', 'United Kingdom')] <- 'UK'
+  d$Country[d$Country %in% c('Usa', 'United States')] <- 'USA'
   #d$Country[d$Country == 'Bosnia And Herzegovina'] <- 'Bosnia and Herzegovina'
   d$Country[d$Country == 'South Korea'] <- 'S.Korea'
   d$Country <- as.factor(d$Country)
@@ -257,10 +257,10 @@ aggregate_and_merge_countries <- function(worldometer, var, days) {
   x
 }
 
-regress <- function(worldometer, var, days) {
-  x <- aggregate_and_merge_countries(worldometer, var, days)
+regress <- function(contriesBCG, var) {
+  #x <- aggregate_and_merge_countries(worldometer, var, days)
   # Remove columns if single levels appears
-  x <- x[,sapply(x, nlevels) != 1]
+  x <- contriesBCG[,sapply(contriesBCG, nlevels) != 1]
   #vars <- names(x)
   #names(x)[1:22] <- letters[1:22]
   #res <- lm(as.formula(paste(var, '~.')), x)
@@ -371,28 +371,33 @@ get_ecdc_data <- function() {
 }
 
 
-get_stats <- function(covid, outcome, days) {
+get_stats <- function(covid, outcome, days, country_set) {
   #outcome <- 'deaths_per_1M'
   #days <- 20
   
   d <- droplevels(covid[!is.na(covid[, outcome]), ])
-  x <- aggregate_and_merge_countries(d, outcome, days) 
+  x <- aggregate_and_merge_countries(d, outcome, days)
+  x <- x[x$CountrySet %in% country_set, ]
   x <- x[,c("BCG administration years", outcome)]
   x <- x[complete.cases(x),]
-  cor_res <- cor.test(x[,1], x[,2], use = 'complete.obs')
+  if(nrow(x) < 2) {
+    cor_res <- list(estimate=NA, p.value=NA)
+  } else {
+    cor_res <- cor.test(x[,1], x[,2], use = 'complete.obs')
+  }
   return(data.frame(cor=cor_res$estimate, pval=cor_res$p.value,n=nrow(x),
                     Days=days))
 }
 
-get_stats_table_outcome <- function(covid, outcome) {
+get_stats_table_outcome <- function(covid, outcome, country_set) {
   d <- as.data.frame(do.call(rbind,
                lapply(seq(10, 30, 5),
-                      function(days) get_stats(covid, outcome, days))))
+                      function(days) get_stats(covid, outcome, days, country_set))))
   d$Outcome <- outcome
   d
 }
 
-get_stats_table <- function(var_align, val_align) {
+get_stats_table <- function(var_align, val_align, country_set) {
   covid <- get_worldometers_data()
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
@@ -400,7 +405,7 @@ get_stats_table <- function(var_align, val_align) {
   outcomes <- c('total_deaths_per_1M', 'critical_per_1M', 'total_recovered_per_1M',
                 'total_cases_per_1M')
   d <- do.call(rbind,
-               lapply(outcomes, get_stats_table_outcome, covid=covid))
+               lapply(outcomes, get_stats_table_outcome, covid=covid, country_set=country_set))
 
   d$'-Log10Pval' <- round(-log10(d$pval))
   d$Pval <- factor(ifelse(d$pval<0.001, '<0.001', 
@@ -430,16 +435,20 @@ get_stats_table <- function(var_align, val_align) {
     scale_fill_manual(values = d$colour, labels = d$Pval)
 }
 
-multi_var <- function(covid, outcome, days) {
-  x <- aggregate_and_merge_countries(covid, outcome, days)
+multi_var <- function(x, outcome) {
+  #x <- aggregate_and_merge_countries(covid, outcome, days)
   x$TBcases5Groups <- NULL
+  x$BCG3Groups <- NULL
+  x$`percentage of population above 65 (2018)` <- NULL
   # Handwash has many missings
   x$handwash. <- NULL
   x <- droplevels(x[complete.cases(x),])
+  # Remove columns with single level
+  x <- x[,sapply(x,nlevels) !=1]
   numeric_cols <- sapply(x, function(i) ! 'factor' %in% class(i))
   xs <- sapply(x[,numeric_cols], scale)
-  x2 <- cbind(xs, x[,!numeric_cols])
-  res <- lm(as.formula(paste(outcome, '~ .')), x)
+  x2 <- as.data.frame(cbind(xs, x[,!numeric_cols]))
+  #res <- lm(as.formula(paste(outcome, '~ .')), x)
   res2 <- lm(as.formula(paste(outcome, '~ .')), x2)
   #res3 <- lmer(as.formula(paste(outcome, '~ .')), x)
   #summ(res2)
@@ -447,14 +456,14 @@ multi_var <- function(covid, outcome, days) {
 }
 
 
-decisionTree <- function(covid, outcome, days) {
+decisionTree <- function(d, outcome) {
   #warning(class(d))
-  d <- aggregate_and_merge_countries(covid, outcome, days)
+  #d <- aggregate_and_merge_countries(covid, outcome, days)
   fit <- rpart(as.formula(paste(outcome, '~ .')), data = d, 
                control=rpart.control(maxdepth=5, # at most 1 split
                         cp=0, # any positive improvement will do
                         minsplit=1,
-                        minbucket=1, # even leaves with 1 point are accepted
+                        minbucket=2, # even leaves with 1 point are accepted
                         xval=0)) # I don't need crossvalidation
   
   #rpart.plot(fit, extra = 1, main=paste('Decistion tree for', outcome))
@@ -465,6 +474,7 @@ decisionTree <- function(covid, outcome, days) {
 main <- function() {
   rm(list=ls())
   source('./functions.R')
+  countries <- get_Danielle_data()
   covid <- get_worldometers_data()
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL

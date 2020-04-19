@@ -22,8 +22,30 @@ function(input, output, session) {
         covid <- get_worldometers_data()
         covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
         covid <- covid[!is.na(covid[,input$var2plot]), ]
-        covid <- covid[covid$Country %in% input$country_list,]
+        #covid <- covid[covid$Country %in% input$country_list,]
         droplevels(covid)
+    })
+    
+    countriesBCG <- reactive({
+        covid <- get_worldometers_data()
+        covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
+        covid <- covid[!is.na(covid[,input$var2plot]), ]
+        #covid <- covid[covid$Country %in% input$country_list,]
+        covid <- droplevels(covid)
+        #warning(nrow(covid))
+        
+        x <- aggregate_and_merge_countries(covid, input$var2plot, input$maxDaysOutcome)
+        #warning(nrow(x))
+        #warning(input$country_set)
+        country_set <- if(input$country_set == 'AB') {
+            c('A', 'B')
+        } else {
+            input$country_set
+        }
+        #warning(country_set)
+        x <- x[x$CountrySet %in% country_set, names(x) != 'CountrySet']
+        #warning(nrow(x))
+        x
     })
     
     output$plot <- renderPlot({
@@ -57,7 +79,9 @@ function(input, output, session) {
     
     output$plotRegression <- renderPlot({
         #warning(input$maxDaysOutcome)
-        cors <- regress(worldo(), input$var2plot, input$maxDaysOutcome)
+        #warning(paste('Rows:', nrow(countriesBCG())))
+        cors <- regress(countriesBCG(), input$var2plot)
+        #warning(nrow(cor))
         if(is.null(cors)) {
             g1 <- ggplot() + 
                 annotate("text", x = 4, y = 25, size=8, 
@@ -69,8 +93,8 @@ function(input, output, session) {
         } else {
         #warning(dim(cors))
             cors$`-Log10Pval` <- -log10(cors$Pval)
-            cors$`-Log10Pval`[cors$Pval>0.05] <- NA
-            cors$Pval <- ifelse(cors$Pval>0.05, NA, formatC(cors$Pval, format = "e", digits = 2))
+            cors$`-Log10Pval`[cors$Pval > 0.05] <- NA
+            cors$Pval <- ifelse(cors$Pval > 0.05, NA, formatC(cors$Pval, format = "e", digits = 2))
             #cors$Pval <- formatC(cors$Pval, format = "e", digits = 2)
             #cors$Pval[is.na(cors$Pval)] <- ''
             
@@ -85,7 +109,7 @@ function(input, output, session) {
                 geom_text(aes(label=Pval), position=position_dodge(width=0.9), vjust=-1)
         }
         
-        g2 <- outcome_plot(aggregate_and_merge_countries(worldo(), input$var2plot, input$maxDaysOutcome), input$var2plot)
+        g2 <- outcome_plot(countriesBCG(), input$var2plot)
         grid.arrange(g1, g2, ncol=1)
         #cowplot::plot_grid(g1, g2, align = "v", nrow = 2, rel_heights = c(2/3, 1/3))
     }, height=1000)
@@ -96,21 +120,26 @@ function(input, output, session) {
               'Outcome was defined as the difference between day',
               input$maxDaysOutcome, 'and day 0 of', input$var2plot, '.\n',
               'Found', 
-              nrow(aggregate_and_merge_countries(worldo(), input$var2plot, input$maxDaysOutcome)),
+              nrow(countriesBCG()),
               'countries satisfying the requirements.'
               )
     })
     
     output$corPlot <- renderPlot({
-        get_stats_table(input$alignby, input$alignvalue)
+        country_set <- if(input$country_set == 'AB') {
+            c('A', 'B')
+        } else {
+            input$country_set
+        }
+        get_stats_table(input$alignby, input$alignvalue, country_set)
     })
     
     output$decisionTree <- renderPlot({
-        decisionTree(worldo(), input$var2plot, input$maxDaysOutcome)
+        decisionTree(countriesBCG(), input$var2plot)
     })
     
     output$multivarOut <- renderPlot({
-        multi_var(worldo(), input$var2plot, input$maxDaysOutcome)
+        multi_var(countriesBCG(), input$var2plot)
     }, height=700)
     
     observe({
