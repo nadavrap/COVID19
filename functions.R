@@ -19,7 +19,7 @@ get_raw_data <- function() {
   # 
   # for_gs <- gs_key("1V9zUidoZl9j-MywE9tW49hCfHfv38I_fcGm-7Tt3ryI")
   # for_gs_sheet <- gs_read(for_gs)
-  
+  myCSV <- read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQLpKsvPNrQaJmCu4zdr1oLnZjcl9B3UiNv29BFQTnACrBQ5CAl19N5ZvSv3WfGclSiuL-t3rEWFSqa/pub?gid=1666407311&single=true&output=csv')
   #myCSV<-read.csv("http://docs.google.com/spreadsheets/d/1V9zUidoZl9j-MywE9tW49hCfHfv38I_fcGm-7Tt3ryI/pub?output=csv")
   d <- read.csv('./data/Corona BCG initial table.csv')
   names(d) <- gsub('\\.', ' ', gsub('\\.\\.', ' ', names(d)))
@@ -113,13 +113,29 @@ get_covid_data <- function(min_death=10, from_cache=TRUE) {
   d
 }
 
-get_Danielle_data <- function() {
-  #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_10.csv', check.names = FALSE)
-  #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_11.csv', check.names = FALSE)
-  #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_12.csv', check.names = FALSE)
-  d <- read.csv('./data/Corona_BCG_edited_table_2020_04_14.csv', check.names = FALSE)
+get_Danielle_data <- function(remove_old_cohort_flag=TRUE) {
+  #d <- read.csv('./data/Corona_BCG_edited_table_2020_04_14.csv', check.names = FALSE)
+  cache_fname <- 'data/latest_download.rds'
+  cache_fname_date <- 'data/latest_download_date.txt'
+  if(file.exists(cache_fname) & 
+     readLines(cache_fname_date) == as.character(Sys.Date())){
+    return(readRDS(cache_fname))
+  }
+  
+  d <- read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQLpKsvPNrQaJmCu4zdr1oLnZjcl9B3UiNv29BFQTnACrBQ5CAl19N5ZvSv3WfGclSiuL-t3rEWFSqa/pub?gid=1666407311&single=true&output=csv',
+                    check.names=FALSE)
+  if (remove_old_cohort_flag) {
+    d$`Old country cohort` <- NULL
+  }
+  if ('Active_TB_.' %in% names(d)) {
+    names(d)[names(d) == 'Active_TB_.'] <- 'Percents_Active_TB'
+  }
+  # Remove % signs and convert to numeric
+  d$`% living in urban areas` <- as.numeric(gsub('%', '', d$`% living in urban areas`))
   # Ingore first emtpy row and on
-  d <- droplevels(d[1:(which(d$COUNTRY=='')[1]-1),])
+  if ('' %in% d$COUNTRY) {
+    d <- droplevels(d[1:(which(d$COUNTRY=='')[1]-1),])
+  }
   # Convert contries names
   d$Country <- stringr::str_to_title(d$COUNTRY)
   d$Country[d$Country == 'Czech'] <- 'Czechia'
@@ -152,6 +168,9 @@ get_Danielle_data <- function() {
   # "Feb 22"  -> date
   d$Date_1st_sick_perM <- as.Date(d$`date of 1 sick per 1M`, format='%b %d')
   d$`date of 1 sick per 1M` <- NULL
+  
+  saveRDS(d, cache_fname)
+  writeLines(as.character(Sys.Date()), cache_fname_date)
   d
 }
 
@@ -338,11 +357,11 @@ outcome_plot <- function(x, var) {
                            add.params = list(color = "blue", fill = "lightgray"),
                            conf.int = TRUE) + 
     xlim(0,min(max(x$HIV_prevalence_19_45_yo), 1.1)) +
-    ggtitle('HIV, outlier removed')
+    ggtitle('HIV, outlier removed') +
     stat_cor(method = "pearson")
   
   ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,gscatterHIV,gscatterHIV2,
-            labels = LETTERS[1:4],
+            labels = LETTERS[1:8],
             ncol = 3, nrow = 3)
 }
 
@@ -373,11 +392,9 @@ get_stats_table_outcome <- function(covid, outcome) {
   d
 }
 
-get_stats_table <- function(var_align, days_align) {
+get_stats_table <- function(var_align, val_align) {
   covid <- get_worldometers_data()
-  #var_align <- 'deaths_per_1M'
-  #days_align <- DEFAULT_MIN_VAL
-  covid <- align_by_var_and_val(covid, var=var_align, days_align)
+  covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
   
   outcomes <- c('total_deaths_per_1M', 'critical_per_1M', 'total_recovered_per_1M',
@@ -386,23 +403,38 @@ get_stats_table <- function(var_align, days_align) {
                lapply(outcomes, get_stats_table_outcome, covid=covid))
 
   d$'-Log10Pval' <- round(-log10(d$pval))
-  d$Pval <- factor(ifelse(d$pval<0.001, '<0.001', ifelse(d$pval<0.01, '<0.01', ifelse(d$pval<0.05, '<0.05', '>=0.05'))))
+  d$Pval <- factor(ifelse(d$pval<0.001, '<0.001', 
+                          ifelse(d$pval<0.01, '<0.01', 
+                                 ifelse(d$pval<0.05, '<0.05', '≥0.05'))),
+                   levels = c('<0.001', '<0.01', '<0.05', '≥0.05'), ordered = TRUE)
+  # Set colours
+  col_map <- setNames(c('#2D6F4C', '#81BA98', '#A8E1BF', '#D3D3D3'),
+                      c("<0.001", "<0.01", "<0.05", ">=0.05"))
+  d$colour <- col_map[d$Pval]
   d$Correlation <- round(d$cor, 2)
+  # Set factor level's order
+  d$Outcome <- factor(d$Outcome, 
+                      levels = c("total_cases_per_1M", "total_deaths_per_1M", 
+                                 "critical_per_1M", "total_recovered_per_1M"))
   
   ggplot(d,aes(x=Days,y= fct_rev(Outcome), fill = Pval,
                label=Correlation))+
-    geom_point(aes(size=n), shape = 21)+
+    geom_point(aes(size=n), shape = 21) +
     theme_bw() +
     geom_text() +
-    scale_fill_brewer(palette="Set1") + scale_size(range = range(d$n), breaks = c(1,2,3,10,20,30)) + 
+    #scale_fill_brewer(palette="Set1") + 
+    scale_size(range = range(d$n), breaks = c(1,2,3,10,20,30)) +
     ylab('Outcome') +
     ggtitle('Outcome\'s correlation to BCG administration period') + 
-    guides(size=guide_legend(title="Number of countries"))
+    guides(size=guide_legend(title="Number of countries")) +
+    scale_fill_manual(values = d$colour, labels = d$Pval)
 }
 
 multi_var <- function(covid, outcome, days) {
   x <- aggregate_and_merge_countries(covid, outcome, days)
   x$TBcases5Groups <- NULL
+  # Handwash has many missings
+  x$handwash. <- NULL
   x <- droplevels(x[complete.cases(x),])
   numeric_cols <- sapply(x, function(i) ! 'factor' %in% class(i))
   xs <- sapply(x[,numeric_cols], scale)
@@ -435,8 +467,8 @@ main <- function() {
   source('./functions.R')
   covid <- get_worldometers_data()
   var_align <- 'total_deaths_per_1M'
-  days_align <- DEFAULT_MIN_VAL
-  covid <- align_by_var_and_val(covid, var=var_align, days_align)
+  val_align <- DEFAULT_MIN_VAL
+  covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
   var_outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
   covid <- covid[!is.na(covid[,var_outcome]), ]
