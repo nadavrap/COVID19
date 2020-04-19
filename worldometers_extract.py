@@ -99,7 +99,7 @@ def process_table(table):
 if __name__ == '__main__':
     #for i in ["0318",date.today().strftime("%m%d")]:
     # Go over all dates since Feb 22nd until today
-    for d in pd.date_range(start="2020-02-22",end=datetime.datetime.today()):
+    for d in pd.date_range(start="2020-01-29",end=datetime.datetime.today()):
       i = d.strftime("%m%d")
       fname = 'data/worldodmeter/' + i + ".csv"
       if not os.path.isfile(fname):
