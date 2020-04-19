@@ -112,7 +112,7 @@ function(input, output, session) {
         g2 <- outcome_plot(countriesBCG(), input$var2plot)
         grid.arrange(g1, g2, ncol=1)
         #cowplot::plot_grid(g1, g2, align = "v", nrow = 2, rel_heights = c(2/3, 1/3))
-    }, height=1000)
+    }, height=1300)
     
     output$regression_output <- renderText({ 
         paste('Data is aligned according to first day the contry had at least',
