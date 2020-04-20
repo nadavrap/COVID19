@@ -417,8 +417,7 @@ outcome_plot <- function(x, var) {
             gscatter_25_to_64, gscatter_over_65,
             gscatterHIV,gscatterHIV2, gscatterMinimalAssumed,
             labels = LETTERS[1:11],
-            ncol = 3, nrow = 4)     
-  
+            ncol = 3, nrow = 4)
 }
 
 get_ecdc_data <- function() {
@@ -427,14 +426,12 @@ get_ecdc_data <- function() {
 }
 
 
-get_stats <- function(covid, outcome, days, country_set) {
-  #outcome <- 'deaths_per_1M'
-  #days <- 20
-  
+get_stats <- function(covid, outcome, days, country_set, 
+                      depended_var="BCG administration years") {
   d <- droplevels(covid[!is.na(covid[, outcome]), ])
   x <- aggregate_and_merge_countries(d, outcome, days)
   x <- x[x$CountrySet %in% country_set, ]
-  x <- x[,c("BCG administration years", outcome)]
+  x <- x[,c(depended_var, outcome)]
   x <- x[complete.cases(x),]
   if(nrow(x) < 2) {
     cor_res <- list(estimate=NA, p.value=NA)
@@ -445,15 +442,18 @@ get_stats <- function(covid, outcome, days, country_set) {
                     Days=days))
 }
 
-get_stats_table_outcome <- function(covid, outcome, country_set) {
+get_stats_table_outcome <- function(covid, outcome, country_set, 
+                                    depended_var="BCG administration years") {
   d <- as.data.frame(do.call(rbind,
                lapply(seq(10, 30, 5),
-                      function(days) get_stats(covid, outcome, days, country_set))))
+                      function(days) 
+                        get_stats(covid, outcome, days, country_set, depended_var))))
   d$Outcome <- outcome
   d
 }
 
-get_stats_table <- function(var_align, val_align, country_set) {
+get_stats_table <- function(var_align, val_align, country_set,
+                            depended_var="BCG administration years") {
   covid <- get_worldometers_data()
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
@@ -461,34 +461,39 @@ get_stats_table <- function(var_align, val_align, country_set) {
   outcomes <- c('total_deaths_per_1M', 'critical_per_1M', 'total_recovered_per_1M',
                 'total_cases_per_1M')
   d <- do.call(rbind,
-               lapply(outcomes, get_stats_table_outcome, covid=covid, country_set=country_set))
+               lapply(outcomes, get_stats_table_outcome, covid=covid, 
+                      country_set=country_set,
+                      depended_var=depended_var))
 
   d$'-Log10Pval' <- round(-log10(d$pval))
-  d$Pval <- factor(ifelse(d$pval<0.001, '<0.001', 
-                          ifelse(d$pval<0.01, '<0.01', 
+  d$Pval <- factor(ifelse(d$pval<0.001, '<0.001',
+                          ifelse(d$pval<0.01, '<0.01',
                                  ifelse(d$pval<0.05, '<0.05', '≥0.05'))),
                    levels = c('<0.001', '<0.01', '<0.05', '≥0.05'), ordered = TRUE)
+  
   # Set colours
-  col_map <- setNames(c('#2D6F4C', '#81BA98', '#A8E1BF', '#D3D3D3'),
-                      c("<0.001", "<0.01", "<0.05", ">=0.05"))
-  d$colour <- col_map[d$Pval]
+  col_map <- setNames(c('#70AF4D', '#106803', '#D1F698', '#D3D3D3'),
+                      c("<0.001", "<0.01", "<0.05", "≥0.05"))
+  d$colour <- col_map[as.character(d$Pval)]
   d$Correlation <- round(d$cor, 2)
   # Set factor level's order
   d$Outcome <- factor(d$Outcome, 
                       levels = c("total_cases_per_1M", "total_deaths_per_1M", 
                                  "critical_per_1M", "total_recovered_per_1M"))
-  
+  d <- droplevels(d)
   ggplot(d,aes(x=Days,y= fct_rev(Outcome), fill = Pval,
                label=Correlation))+
     geom_point(aes(size=n), shape = 21) +
     theme_bw() +
     geom_text() +
     #scale_fill_brewer(palette="Set1") + 
-    scale_size(range = range(d$n), breaks = c(1,2,3,10,20,30)) +
+    scale_size(range = range(d$n), breaks = c(1,5,10,20,30, 40, 50)) +
     ylab('Outcome') +
     ggtitle('Outcome\'s correlation to BCG administration period') + 
     guides(size=guide_legend(title="Number of countries")) +
-    scale_fill_manual(values = d$colour, labels = d$Pval)
+    guides(fill = guide_legend(override.aes = list(size=10))) +
+    scale_fill_manual(values = unique(d$colour))
+    #theme(legend.position = "bottom", legend.box = "vertical")
 }
 
 multi_var <- function(x, outcome) {

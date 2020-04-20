@@ -89,6 +89,13 @@ shinyUI(navbarPage("COVID19",
                     #             selected = all_countries,
                     #             multiple = TRUE
                     # ),
+                    radioButtons('depended_var', 'BCG administrated years',
+                                 choiceNames = c('Strict', 'Imputed'), 
+                                 selected = 'BCG administration years',
+                                 inline = TRUE, width = NULL, 
+                                 choiceValues = c('BCG administration years',
+                                                  "Including minimal assumed years")),
+                    
                     radioButtons('country_set', 'Countries Set:', 
                                  choiceNames = c('A', 'B', 'A and B'), selected = 'A',
                                  inline = TRUE, width = NULL, 

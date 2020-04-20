@@ -131,7 +131,8 @@ function(input, output, session) {
         } else {
             input$country_set
         }
-        get_stats_table(input$alignby, input$alignvalue, country_set)
+        get_stats_table(input$alignby, input$alignvalue, country_set, 
+                        depended_var=input$depended_var)
     })
     
     output$decisionTree <- renderPlot({
@@ -156,7 +157,7 @@ function(input, output, session) {
     observe({
         y <- input$alignby
         yval <- input$alignvalue
-        max_val <- round(max(worldo()[,input$alignby], na.rm = TRUE))
+        max_val <- round(max(worldo()[,y], na.rm = TRUE))
         if (max_val > 1000) {
             step <- 50
             yval <- round(yval)
