@@ -140,8 +140,19 @@ function(input, output, session) {
     })
     
     output$multivarOut <- renderPlot({
-        multi_var(countriesBCG(), input$var2plot)
+        multi_var(countriesBCG(), input$var2plot, depended_var=input$depended_var)
     }, height=700)
+    
+    # Save plots
+    output$downloadPlot <- downloadHandler(
+        filename = 
+            paste0('COVID_19_BCG_', 
+                   format(Sys.Date(), '%Y_%m_%d'), '.pdf'),
+        content = function(file) {
+            ggsave(file, plot = outcome_plot(countriesBCG(), input$var2plot), 
+                   device = "pdf", width = 7, height = 7)
+        }
+    )
     
     observe({
         y <- input$y

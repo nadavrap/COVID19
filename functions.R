@@ -496,11 +496,17 @@ get_stats_table <- function(var_align, val_align, country_set,
     #theme(legend.position = "bottom", legend.box = "vertical")
 }
 
-multi_var <- function(x, outcome) {
+multi_var <- function(x, outcome, depended_var="BCG administration years") {
   #x <- aggregate_and_merge_countries(covid, outcome, days)
   x$TBcases5Groups <- NULL
   x$BCG3Groups <- NULL
   x$`percentage of population above 65 (2018)` <- NULL
+  if (depended_var == "BCG administration years") {
+    x$`Including minimal assumed years` <- NULL
+  } else {
+    x$`BCG administration years` <- NULL
+  }
+  x$CountrySet <- NULL
   # Handwash has many missings
   x$handwash. <- NULL
   x <- droplevels(x[complete.cases(x),])
