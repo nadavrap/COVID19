@@ -360,6 +360,14 @@ outcome_plot <- function(x, var) {
     ggtitle('HIV, outlier removed') +
     stat_cor(method = "pearson")
   
+  names(x)[names(x) == "Including minimal assumed years"] <- "BCG_years_imputed"
+  gscatterMinimalAssumed <- ggscatter(data=x, x = "BCG_years_imputed", y = var,
+                        add = "reg.line",  # Add regressin line
+                        add.params = list(color = "blue", fill = "lightgray"),
+                        conf.int = TRUE # Add confidence interval
+  ) + stat_cor(method = "pearson")#, label.x = 3, label.y = 30
+  
+  
   #######################################
   # Additions by Danielle inserted here #
   #######################################
@@ -405,8 +413,9 @@ outcome_plot <- function(x, var) {
   
   ###### BACK TO NADAV'S CODE
   
-  ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,gscatter_under_25, gscatter_25_to_64, gscatter_over_65,
-            gscatterHIV,gscatterHIV2,
+  ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,gscatter_under_25, 
+            gscatter_25_to_64, gscatter_over_65,
+            gscatterHIV,gscatterHIV2, gscatterMinimalAssumed,
             labels = LETTERS[1:11],
             ncol = 3, nrow = 4)     
   
