@@ -191,14 +191,14 @@ get_covid_normalized <- function() {
   covid
 }
 
-get_raw_worldometer_data <- function() {
+get_raw_worldometer_data <- function(end_date) {
   source('./worldometers_extract.R')
-  d <- get_worlodmeters_raw_data()
+  d <- get_worlodmeters_raw_data(end_date)
 }
 
-get_worldometers_data <- function() {
+get_worldometers_data <- function(end_date) {
   #covid <- read.csv('./data/world_metes_COVID_data_all_dates.csv', check.names = FALSE)
-  covid <- get_raw_worldometer_data()
+  covid <- get_raw_worldometer_data(end_date)
   names(covid)[names(covid)=='Country.Other'] <- 'Country'
   covid$deaths_per_0.5M <- NULL
   # There are country names with leading spaces
@@ -463,8 +463,14 @@ get_stats_table_outcome <- function(covid, outcome, country_set,
 }
 
 get_stats_table <- function(var_align, val_align, country_set,
-                            depended_var="BCG administration years") {
-  covid <- get_worldometers_data()
+                            depended_var="BCG administration years",
+                            end_date) {
+  country_set <- if(country_set == 'AB') {
+    c('A', 'B')
+  } else {
+    country_set
+  }
+  covid <- get_worldometers_data(end_date)
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
   
@@ -506,11 +512,18 @@ get_stats_table <- function(var_align, val_align, country_set,
     #theme(legend.position = "bottom", legend.box = "vertical")
 }
 
-multi_var <- function(x, outcome, depended_var="BCG administration years") {
+multi_var <- function(x, outcome, depended_var="BCG administration years",
+                      remove_BCG=FALSE, remove_ps=FALSE) {
   #x <- aggregate_and_merge_countries(covid, outcome, days)
   x$TBcases5Groups <- NULL
   x$BCG3Groups <- NULL
   x$`percentage of population above 65 (2018)` <- NULL
+  if (remove_BCG) {
+    x$`BCG administration years` <- NULL
+  }
+  if (remove_ps) {
+    x$ps_25_to_64 <- x$ps_over_65 <- x$ps_under_25 <- NULL
+  }
   if (depended_var == "BCG administration years") {
     x$`Including minimal assumed years` <- NULL
   } else {
@@ -552,7 +565,7 @@ main <- function() {
   rm(list=ls())
   source('./functions.R')
   countries <- get_Danielle_data()
-  covid <- get_worldometers_data()
+  covid <- get_worldometers_data(as.Date('2020-04-20'))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, val_align)

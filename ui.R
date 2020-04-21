@@ -9,7 +9,7 @@ theme_set(theme_bw())
 #d <- get_raw_data()
 #df <- to_long(d)
 covid <- get_covid_normalized()
-worldometer <- get_worldometers_data()
+worldometer <- get_worldometers_data(as.Date("2020-04-20"))
 all_countries <- sort(unique(worldometer$Country))
 worldometer <- align_by_var_and_val(worldometer, var='total_deaths_per_1M', DEFAULT_MIN_VAL)
 
@@ -29,8 +29,7 @@ shinyUI(navbarPage("COVID19",
                     #selectInput('x', 'X', names(d)),
                     selectInput('y', 'Variable to plot', unique(covid$Var), 
                                 unique(covid$Var)[[1]]),
-                    #selectInput('color', 'Color', c('None', names(d))),
-                    
+
                     sliderInput('ylim', 'Limit Y axis', min=0, 
                                 max=max(covid$value[covid$Var=='deaths']),
                                 value=max(covid$value[covid$Var=='deaths']), 
@@ -45,10 +44,6 @@ shinyUI(navbarPage("COVID19",
                     sliderInput('maxDays', 'Outcome at day', min=1, 
                                 max=max(covid$Days),
                                 value=max(covid$Days), step=1, round=0),
-                    #checkboxInput('smooth', 'Smooth'),
-                    
-                    #selectInput('facet_row', 'Facet Row', c(None='.', names(d))),
-                    #selectInput('facet_col', 'Facet Column', c(None='.', names(d)))
                 ),
                 
                 mainPanel(
@@ -56,39 +51,28 @@ shinyUI(navbarPage("COVID19",
                           "country passed 10 commulative death from COVID-19."),
                     # Output: Tabset w/ plot, summary, and table ----
                     tabsetPanel(type = "tabs",
-                                tabPanel("Plot", plotOutput("plot"))#,
-                                #tabPanel("Summary", verbatimTextOutput("summary")),
-                                #tabPanel("Table", tableOutput("table"))
+                                tabPanel("Plot", plotOutput("plot"))
                     )
-                    
-                    #plotOutput('plot')
                 )
             ),
        # Worldometer Data
        tabPanel("Worldometer Data",
                 sidebarPanel(
                     #width = 3,
+                    dateInput("end_date", "Latest Date:", value = "2020-04-20"),
                     selectInput('alignby', 'Align countries by variable', 
                                 names(worldometer)[2:(ncol(worldometer)-1)], 
                                 'total_deaths_per_1M'),
                     sliderInput('alignvalue', 'Align countries by variable having at least:', 
                                 min=0, max=20,
                                 value=DEFAULT_MIN_VAL, step=.25, round=2),
-                    #selectInput('x', 'X', names(d)),
                     selectInput('var2plot', 'Variable to plot', 
                                 names(worldometer)[2:(ncol(worldometer)-1)],
                                 "total_deaths_per_1M"),
-                    #selectInput('color', 'Color', c('None', names(d))),
-                    
+
                     sliderInput('ylim_plot', 'Limit Y axis', min=0, max=round(max(worldometer[,'total_deaths_per_1M'], na.rm = TRUE)),
                                 value=max(worldometer[,'total_deaths_per_1M'], na.rm=TRUE), step=1, round=0),
-                    
-                    #checkboxInput('log10scale', 'Log 10 Scale', value = FALSE),
-                    # selectInput("country_list", "Select countries",
-                    #             choices = all_countries,
-                    #             selected = all_countries,
-                    #             multiple = TRUE
-                    # ),
+
                     radioButtons('depended_var', 'BCG administrated years',
                                  choiceNames = c('Strict', 'Imputed'), 
                                  selected = 'BCG administration years',
@@ -100,13 +84,11 @@ shinyUI(navbarPage("COVID19",
                                  choiceNames = c('A', 'B', 'A and B'), selected = 'AB',
                                  inline = TRUE, width = NULL, 
                                  choiceValues = c('A', 'B', 'AB')),
+                    checkboxInput('removeBCG', 'Remove BCG from multivar', value = FALSE),
+                    checkboxInput('removePS', 'Remove PS vars from multivar', value = FALSE),
                     sliderInput('maxDaysOutcome', 'Outcome at day', min=1, 
                                 max=max(worldometer$Days),
                                 value=20, step=1, round=TRUE),
-                    #downloadButton('downloadPlot', 'Download Plot'),
-                    
-                    #selectInput('facet_row', 'Facet Row', c(None='.', names(d))),
-                    #selectInput('facet_col', 'Facet Column', c(None='.', names(d)))
                 ),
                 
                 mainPanel(
@@ -123,14 +105,12 @@ shinyUI(navbarPage("COVID19",
                                          downloadButton('downloadPlot', 'Download Plot'),
                                          textOutput("regression_output"),
                                          plotOutput("plotRegression")),
-                                tabPanel("Correlations", plotOutput("corPlot")),
+                                tabPanel("Correlations", plotOutput("corPlot"),
+                                         downloadButton('downloadCors', 'Download Plot'),),
                                 tabPanel('Multivariable', plotOutput('multivarOut')),
                                 tabPanel('Decision Tree', plotOutput('decisionTree'))
                                 #tabPanel("Summary", verbatimTextOutput("summary")),
-                                #tabPanel("Table", tableOutput("table"))
                     )
-                    
-                    #plotOutput('plot')
                 )
        )
        # close the UI definition

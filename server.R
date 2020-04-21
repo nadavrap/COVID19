@@ -19,7 +19,7 @@ function(input, output, session) {
     })
     
     worldo <- reactive({
-        covid <- get_worldometers_data()
+        covid <- get_worldometers_data(input$end_date)
         covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
         covid <- covid[!is.na(covid[,input$var2plot]), ]
         #covid <- covid[covid$Country %in% input$country_list,]
@@ -27,7 +27,7 @@ function(input, output, session) {
     })
     
     countriesBCG <- reactive({
-        covid <- get_worldometers_data()
+        covid <- get_worldometers_data(input$end_date)
         covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
         covid <- covid[!is.na(covid[,input$var2plot]), ]
         #covid <- covid[covid$Country %in% input$country_list,]
@@ -126,13 +126,8 @@ function(input, output, session) {
     })
     
     output$corPlot <- renderPlot({
-        country_set <- if(input$country_set == 'AB') {
-            c('A', 'B')
-        } else {
-            input$country_set
-        }
-        get_stats_table(input$alignby, input$alignvalue, country_set, 
-                        depended_var=input$depended_var)
+        get_stats_table(input$alignby, input$alignvalue, input$country_set, 
+                        depended_var=input$depended_var, input$end_date)
     })
     
     output$decisionTree <- renderPlot({
@@ -140,7 +135,8 @@ function(input, output, session) {
     })
     
     output$multivarOut <- renderPlot({
-        multi_var(countriesBCG(), input$var2plot, depended_var=input$depended_var)
+        multi_var(countriesBCG(), input$var2plot, depended_var=input$depended_var,
+                  remove_BCG=input$removeBCG, remove_ps=input$removePS)
     }, height=700)
     
     # Save plots
@@ -151,6 +147,16 @@ function(input, output, session) {
         content = function(file) {
             ggsave(file, plot = outcome_plot(countriesBCG(), input$var2plot), 
                    device = "pdf", width = 7, height = 7)
+        }
+    )
+    
+    output$downloadCors <- downloadHandler(
+        filename = paste0('COVID_19_BCG_Correlation_Table_', 
+                   format(Sys.Date(), '%Y_%m_%d'), '.pdf'),
+        content = function(file) {
+            ggsave(file, plot=get_stats_table(input$alignby, input$alignvalue, input$country_set, 
+                                              depended_var=input$depended_var, input$end_date),
+                   device='pdf', width = 10, height = 7)
         }
     )
     

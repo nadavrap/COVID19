@@ -8,8 +8,12 @@ library(dplyr)
 #use_python("python3", required = T)
 
 
-get_worlodmeters_raw_data <- function() {
-  fname <- paste0('data/worldometer_',format(Sys.time(), "%Y_%m_%d"), '.rds')
+get_worlodmeters_raw_data <- function(end_date=NA) {
+  if (is.na(end_date)) {
+    end_date <- Sys.Date()
+  }
+  
+  fname <- paste0('data/worldometer_',format(end_date, "%Y_%m_%d"), '.rds')
   if (file.exists(fname)) {
     return(readRDS(fname))
   }
