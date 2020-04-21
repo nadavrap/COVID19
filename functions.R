@@ -401,6 +401,16 @@ outcome_plot <- function(x, var) {
                                 add.params = list(color = "blue", fill = "lightgray"),
                                 conf.int = TRUE # Add confidence interval
   ) + stat_cor(method = "pearson", label.x.npc = "center")#, label.x = 3, label.y = 30   
+                   
+  # female share
+  names(x)[names(x) == "female_share"] <- "female_share"
+  gscatter_female_share <- ggscatter(data=x, x = "female_share", y = var,
+                                xlab = "female_share",
+                                ylab = "Deaths per 1M",
+                                add = "reg.line",  
+                                add.params = list(color = "blue", fill = "lightgray"),
+                                conf.int = TRUE 
+  ) + stat_cor(method = "pearson", label.x.npc = "center")                 
   
   
   
@@ -415,9 +425,9 @@ outcome_plot <- function(x, var) {
   
   ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,gscatter_under_25, 
             gscatter_25_to_64, gscatter_over_65,
-            gscatterHIV,gscatterHIV2, gscatterMinimalAssumed,
-            labels = LETTERS[1:11],
-            ncol = 3, nrow = 4)
+            gscatterHIV,gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share,
+            labels = LETTERS[1:13],
+            ncol = 4, nrow = 4)
 }
 
 get_ecdc_data <- function() {
