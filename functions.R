@@ -293,7 +293,7 @@ regress <- function(contriesBCG, var) {
   droplevels(cors[cors$Var != var,])
 }
 
-outcome_plot <- function(x, var) {
+outcome_plot <- function(x, var, bcg_years_plot_only=FALSE) {
   #comp <- expand.grid(levels(x$TBcases5Groups), levels(x$TBcases5Groups))
   comp_list <- function(n) {
     l <- 1:n
@@ -330,13 +330,19 @@ outcome_plot <- function(x, var) {
   
   # Correlated BCG administration years with outcome
   names(x)[names(x) == "BCG administration years"] <- "BCG_administration_years"
+  ytitle <- ifelse(var == 'total_deaths_per_1M', 'DPM diff',
+                   ifelse(var == 'total_cases_per_1M', 'CPM diff',var))
   #suppressWarnings({
   gscatter <- ggscatter(data=x, x = "BCG_administration_years", y = var,
                     add = "reg.line",  # Add regressin line
                     add.params = list(color = "blue", fill = "lightgray"),
                     conf.int = TRUE # Add confidence interval
-    ) + stat_cor(method = "pearson")#, label.x = 3, label.y = 30
-  
+    ) + stat_cor(method = "pearson") +
+    xlab('Years of BCG admisnistration') +
+    ylab(ytitle)
+  if (bcg_years_plot_only) {
+    return(gscatter)
+  }
   names(x)[names(x) == "Active_TB_%"] <- "Percents_Active_TB"
   gscatterTB <- ggscatter(data=x, x = "Percents_Active_TB", y = var,
                         add = "reg.line",  # Add regressin line
@@ -555,7 +561,7 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
     x$ps_25_to_64 <- x$ps_over_65 <- x$ps_under_25 <- NULL
   }
   if (ps25only) {
-    x$ps_over_65 <- x$ps_under_25 <- NULL
+    x$ps_over_65 <- x$ps_25_to_64 <- NULL
   }
   if (depended_var == "BCG administration years") {
     x$`Including minimal assumed years` <- NULL
@@ -573,6 +579,9 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   x2 <- as.data.frame(cbind(xs, x[,!numeric_cols]))
   #res <- lm(as.formula(paste(outcome, '~ .')), x)
   res2 <- lm(as.formula(paste(outcome, '~ .')), x2)
+  # Replace '_' in names with ' '
+  names(res2$coefficients) <- gsub('_' ,' ', names(res2$coefficients))
+  names(res2$coefficients) <- gsub('`' ,'', names(res2$coefficients))
   #res3 <- lmer(as.formula(paste(outcome, '~ .')), x)
   #summ(res2)
   if (get_data) {
@@ -602,6 +611,37 @@ decisionTree <- function(d, outcome) {
   #rpart.plot(fit, extra = 1, main=paste('Decistion tree for', outcome))
   #prp(fit, main=paste('Decistion tree for', outcome),varlen=3)
   fancyRpartPlot(fit, main=paste('Decistion tree for', outcome), sub="")
+}
+
+get_regression_plot_only <- function(val_align=.5,
+                                     var_align='total_deaths_per_1M',
+                                     var_outcome='total_deaths_per_1M', #'critical_per_1M'#
+                                     days_outcome=15) {
+  countries <- get_Danielle_data()
+  covid <- get_worldometers_data(as.Date('2020-04-20'))
+  covid <- align_by_var_and_val(covid, var=var_align, val_align)
+  covid <- covid[!is.na(covid[,var_outcome]), ]
+  covid <- droplevels(covid)
+  x <- aggregate_and_merge_countries(covid, var_outcome, days_outcome) 
+  outcome_plot(x, var = var_outcome, bcg_years_plot_only = TRUE)
+}
+
+fig2 <- function() {
+  g1 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
+                                 var_outcome='total_deaths_per_1M',days_outcome=15) +
+    ggtitle('DPM diff at day 15, aligned by 0.5 DPM')
+  g2 <- get_regression_plot_only(val_align = 1.5, var_align='total_deaths_per_1M',
+                                 var_outcome='total_deaths_per_1M',days_outcome=15) +
+    ggtitle('DPM diff at day 15, aligned by 1.5 DPM')
+  g3 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
+                                 var_outcome='total_cases_per_1M',days_outcome=15) +
+    ggtitle('CPM diff at day 15, aligned by 0.5 DPM')
+  g4 <- get_regression_plot_only(val_align = 1.5, var_align='total_deaths_per_1M',
+                                 var_outcome='total_cases_per_1M',days_outcome=15) +
+    ggtitle('CPM diff at day 15, aligned by 1.5 DPM')
+  g <- ggarrange(g1, g2, g3, g4,
+            ncol = 2, nrow = 2, labels = LETTERS[1:4])
+  ggsave('../Covid_19_Research/Fig2.eps', width = 9, height = 9)
 }
 
 main <- function() {
