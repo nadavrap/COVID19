@@ -17,7 +17,7 @@ function(input, output, session) {
         df <- df[df$Country %in% input$countries, ]
         droplevels(df)
     })
-    
+
     worldo <- reactive({
         covid <- get_worldometers_data(input$end_date)
         covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
