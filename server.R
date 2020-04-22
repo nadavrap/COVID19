@@ -112,7 +112,7 @@ function(input, output, session) {
         g2 <- outcome_plot(countriesBCG(), input$var2plot)
         grid.arrange(g1, g2, ncol=1)
         #cowplot::plot_grid(g1, g2, align = "v", nrow = 2, rel_heights = c(2/3, 1/3))
-    }, height=1300)
+    })
     
     output$regression_output <- renderText({ 
         paste('Data is aligned according to first day the contry had at least',
@@ -136,8 +136,9 @@ function(input, output, session) {
     
     output$multivarOut <- renderPlot({
         multi_var(countriesBCG(), input$var2plot, depended_var=input$depended_var,
-                  remove_BCG=input$removeBCG, remove_ps=input$removePS)
-    }, height=700)
+                  remove_BCG=input$removeBCG, remove_ps=input$removePS,
+                  ps25only=input$ps25only)
+    })
     
     # Save plots
     output$downloadPlot <- downloadHandler(
@@ -152,11 +153,27 @@ function(input, output, session) {
     
     output$downloadCors <- downloadHandler(
         filename = paste0('COVID_19_BCG_Correlation_Table_', 
-                   format(Sys.Date(), '%Y_%m_%d'), '.pdf'),
+                          format(Sys.Date(), '%Y_%m_%d'), '.pdf'),
         content = function(file) {
             ggsave(file, plot=get_stats_table(input$alignby, input$alignvalue, input$country_set, 
                                               depended_var=input$depended_var, input$end_date),
                    device='pdf', width = 10, height = 7)
+        }
+    )
+    
+    
+    
+    output$downloadMultivarDarta <- downloadHandler(
+        filename = paste0('COVID_19_Multivariable_Results_' ,
+                   format(Sys.Date(), '%Y_%m_%d'), '.csv'),
+        content = function(file) {
+            write.csv(multi_var(countriesBCG(), input$var2plot, 
+                                depended_var=input$depended_var,
+                                remove_BCG=input$removeBCG, 
+                                remove_ps=input$removePS,
+                                get_data=TRUE,
+                                ps25only=input$ps25only),
+                      file, row.names = TRUE)   
         }
     )
     
