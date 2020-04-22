@@ -376,31 +376,28 @@ outcome_plot <- function(x, var) {
   names(x)[names(x) == "ps_under_25"] <- "ps_under_25"
   gscatter_under_25 <- ggscatter(data=x, x = "ps_under_25", y = var,
                                  xlab = "Relative BCG coverage, below 24 years population share",
-                                 ylab = "Deaths per 1M",
-                                 add = "reg.line",  # Add regressin line
+                                 add = "reg.line",  
                                  add.params = list(color = "blue", fill = "lightgray"),
-                                 conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")#, label.x = 3, label.y = 30
+                                 conf.int = TRUE 
+  ) + stat_cor(method = "pearson", label.x.npc = "center")
   
   # age group: 25-64
   names(x)[names(x) == "ps_25_to_64"] <- "ps_25_to_64"
   gscatter_25_to_64 <- ggscatter(data=x, x = "ps_25_to_64", y = var,
                                  xlab = "Relative BCG coverage, 25-64 years population share",
-                                 ylab = "Deaths per 1M",
-                                 add = "reg.line",  # Add regressin line
+                                 add = "reg.line",  
                                  add.params = list(color = "blue", fill = "lightgray"),
-                                 conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")#, label.x = 3, label.y = 30                 
+                                 conf.int = TRUE 
+  ) + stat_cor(method = "pearson", label.x.npc = "center")                
   
   # age group: 65+
   names(x)[names(x) == "ps_over_65"] <- "ps_over_65"
   gscatter_over_65 <- ggscatter(data=x, x = "ps_over_65", y = var,
                                 xlab = "Relative BCG coverage, above 65 years population share",
-                                ylab = "Deaths per 1M",
-                                add = "reg.line",  # Add regressin line
+                                add = "reg.line",  
                                 add.params = list(color = "blue", fill = "lightgray"),
-                                conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")#, label.x = 3, label.y = 30   
+                                conf.int = TRUE 
+  ) + stat_cor(method = "pearson", label.x.npc = "center")  
                    
   # female share
   names(x)[names(x) == "female_share"] <- "female_share"
@@ -412,8 +409,24 @@ outcome_plot <- function(x, var) {
                                 conf.int = TRUE 
   ) + stat_cor(method = "pearson", label.x.npc = "center")                 
   
+  # below median
+  names(x)[names(x) == "median_down"] <- "median_down"
+  gscatter_median_down <- ggscatter(data=x, x = "median_down", y = var,
+                                xlab = "Relative BCG coverage, population below the median",
+                                add = "reg.line",  
+                                add.params = list(color = "blue", fill = "lightgray"),
+                                conf.int = TRUE 
+  ) + stat_cor(method = "pearson", label.x.npc = "center")     
   
-  
+    # above median
+  names(x)[names(x) == "median_up"] <- "median_up"
+  gscatter_median_up <- ggscatter(data=x, x = "median_up", y = var,
+                                xlab = "Relative BCG coverage, population above the median",
+                                add = "reg.line",  
+                                add.params = list(color = "blue", fill = "lightgray"),
+                                conf.int = TRUE 
+  ) + stat_cor(method = "pearson", label.x.npc = "center")                     
+                   
   # To add Danielle's figure separetly:
   figure <- ggarrange(gscatter_under_25, gscatter_25_to_64, gscatter_over_65,
                       ncol = 1, nrow = 3, labels = LETTERS[1:3])
@@ -425,7 +438,7 @@ outcome_plot <- function(x, var) {
   
   ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,gscatter_under_25, 
             gscatter_25_to_64, gscatter_over_65,
-            gscatterHIV,gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share,
+            gscatterHIV,gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share, gscatter_median_down, gscatter_median_up,
             labels = LETTERS[1:13],
             ncol = 4, nrow = 4)
 }
