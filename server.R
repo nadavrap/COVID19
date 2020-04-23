@@ -35,16 +35,6 @@ function(input, output, session) {
         #warning(nrow(covid))
         
         x <- aggregate_and_merge_countries(covid, input$var2plot, input$maxDaysOutcome)
-        #warning(nrow(x))
-        #warning(input$country_set)
-        country_set <- if(input$country_set == 'AB') {
-            c('A', 'B')
-        } else {
-            input$country_set
-        }
-        #warning(country_set)
-        x <- x[x$CountrySet %in% country_set, names(x) != 'CountrySet']
-        #warning(nrow(x))
         x
     })
     
@@ -110,7 +100,8 @@ function(input, output, session) {
         }
         
         g2 <- outcome_plot(countriesBCG(), input$var2plot)
-        grid.arrange(g1, g2, ncol=1)
+        #grid.arrange(g1, g2, ncol=1, rel_heights = c(1/10, 9/10))
+        cowplot::plot_grid(g1, g2, ncol=1, rel_heights = c(3/10, 7/10))
         #cowplot::plot_grid(g1, g2, align = "v", nrow = 2, rel_heights = c(2/3, 1/3))
     })
     
@@ -126,7 +117,7 @@ function(input, output, session) {
     })
     
     output$corPlot <- renderPlot({
-        get_stats_table(input$alignby, input$alignvalue, input$country_set, 
+        get_stats_table(input$alignby, input$alignvalue, 
                         depended_var=input$depended_var, input$end_date)
     })
     
@@ -155,7 +146,7 @@ function(input, output, session) {
         filename = paste0('COVID_19_BCG_Correlation_Table_', 
                           format(Sys.Date(), '%Y_%m_%d'), '.pdf'),
         content = function(file) {
-            ggsave(file, plot=get_stats_table(input$alignby, input$alignvalue, input$country_set, 
+            ggsave(file, plot=get_stats_table(input$alignby, input$alignvalue, 
                                               depended_var=input$depended_var, input$end_date),
                    device='pdf', width = 10, height = 7)
         }
