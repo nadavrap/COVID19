@@ -80,10 +80,6 @@ shinyUI(navbarPage("COVID19",
                                  choiceValues = c('BCG administration years',
                                                   "Including minimal assumed years")),
                     
-                    # radioButtons('country_set', 'Countries Set:', 
-                    #              choiceNames = c('A', 'B', 'A and B'), selected = 'AB',
-                    #              inline = TRUE, width = NULL, 
-                    #              choiceValues = c('A', 'B', 'AB')),
                     checkboxInput('removeBCG', 'Remove BCG from multivar', value = FALSE),
                     checkboxInput('removePS', 'Remove PS vars from multivar', value = FALSE),
                     checkboxInput('ps25only', 'Remove ps25 and ps65', value = FALSE),
@@ -110,7 +106,7 @@ shinyUI(navbarPage("COVID19",
                                          downloadButton('downloadCors', 'Download Plot'),),
                                 tabPanel('Multivariable', plotOutput('multivarOut', height = 500),
                                          downloadButton('downloadMultivarDarta', 'Download Data'),),
-                                tabPanel('Decision Tree', plotOutput('decisionTree'))
+                                #tabPanel('Decision Tree', plotOutput('decisionTree'))
                                 #tabPanel("Summary", verbatimTextOutput("summary")),
                     )
                 )
