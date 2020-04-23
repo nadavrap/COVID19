@@ -124,7 +124,10 @@ get_Danielle_data <- function(remove_old_cohort_flag=TRUE) {
   
   d <- read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQLpKsvPNrQaJmCu4zdr1oLnZjcl9B3UiNv29BFQTnACrBQ5CAl19N5ZvSv3WfGclSiuL-t3rEWFSqa/pub?gid=1666407311&single=true&output=csv',
                     check.names=FALSE)
+  names(d)[names(d) == 'Including minimal assumed years'] <- 'BCG admin years (Imp)'
   d$`Old country cohort` <- NULL
+  names(d)[names(d) == 'percentage of population above 65 (2018)'] <- 
+    'percentage of population above 65'
   
   if ('Active_TB_.' %in% names(d)) {
     names(d)[names(d) == 'Active_TB_.'] <- 'Percents_Active_Tuberculosis'
@@ -301,7 +304,7 @@ regress <- function(contriesBCG, var) {
 }
 
 outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
-                         return_g15=FALSE) {
+                         return_fig5=FALSE) {
   #comp <- expand.grid(levels(x$TBcases5Groups), levels(x$TBcases5Groups))
   comp_list <- function(n) {
     l <- 1:n
@@ -375,7 +378,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
     ggtitle('HIV, outlier removed') +
     stat_cor(method = "pearson")
   
-  names(x)[names(x) == "Including minimal assumed years"] <- "BCG_years_imputed"
+  names(x)[names(x) == "BCG admin years (Imp)"] <- "BCG_years_imputed"
   gscatterMinimalAssumed <- ggscatter(data=x, x = "BCG_years_imputed", y = var,
                         add = "reg.line",  # Add regressin line
                         add.params = list(color = "blue", fill = "lightgray"),
@@ -449,15 +452,17 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
                        label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
     theme(legend.position = "none") +
     expand_limits(y=max(x[,var])*1.2)                
-  if (return_g15) {
-    return(g15)
-  }
+  
   # To add Danielle's figure separetly:
-  figure <- ggarrange(gscatter_under_25, gscatter_25_to_64, gscatter_over_65,
-                      ncol = 1, nrow = 3, labels = letters[1:3])
-  Dani_figure <- annotate_figure(figure,
-                                 top = text_grob("Relative BCG coverage by age groups, acording to population share", 
-                                                 color = "black", face = "bold", size = 14))      
+  figure <- ggarrange(gscatter_under_25, gscatter_25_to_64, gscatter_over_65,g15,
+                      ncol = 2, nrow = 2, labels = letters[1:3])
+  if (return_fig5) {
+    Dani_figure <- annotate_figure(figure,
+                                   top = text_grob("Relative BCG coverage by age groups, acording to population share", 
+                                                   color = "black", face = "bold", size = 14))      
+    
+    return(Dani_figure)
+  }
   
   ###### BACK TO NADAV'S CODE
   
@@ -550,9 +555,19 @@ prety_names <- function(n) {
   # Replace '_' in names with ' '
   n <- gsub('_' ,' ', n)
   n <- gsub('`' ,'', n)
+  n <- gsub('\\.' ,'', n)
   all_lower_names <- n == tolower(n)
   n[all_lower_names] <- 
     stringr::str_to_sentence(n[all_lower_names])
+  n[n=="obese W"] <- "Obese W"
+  n[n=="obese M"] <- "Obese M"
+  n[n=="population size (M)" ] <- "Population size (M)" 
+  n[n == "Ps 25 to 64"] <- "PS 25 to 64"
+  n[n == "Ps over 65"] <- "PS over 65"
+  n[n == "Ps under 25"] <- "PS under 25"
+  n[n == "smoking M"] <- "Smoking M"
+  n[n == "smoking W"] <- "Smoking W"
+  n[n == "total deaths per 1M"] <- "Total deaths per 1M"
   n
 }
 
@@ -560,9 +575,10 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
                       remove_BCG=FALSE, remove_ps=FALSE, get_data=FALSE,
                       ps25only=FALSE) {
   #x <- aggregate_and_merge_countries(covid, outcome, days)
-  names(x)[names(x) == 'TB_high'] <- 'Hight Tuberculosis'
-  names(x)[names(x) == 'Percents_Active_Tuberculosis'] <- 'Hight Tuberculosis'
-  
+  names(x)[names(x) == 'TB_high'] <- 'High Tuberculosis'
+  #names(x)[names(x) == 'Percents_Active_Tuberculosis'] <- 'High Tuberculosis'
+  x$`percentage of population above 65` <- NULL
+  x$IncomeGroup <- factor(as.numeric(x$IncomeGroup))
   x$TBcases5Groups <- NULL
   x$BCG3Groups <- NULL
   x$`percentage of population above 65 (2018)` <- NULL
@@ -571,6 +587,7 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   x$vaccinated_15_y <- NULL
   # and TB_high as it is redundant with Percents_Active_Tuberculosis
   x$TB_high <- NULL
+  x$`High Tuberculosis` <- NULL
   
   if (remove_BCG) {
     x$`BCG administration years` <- NULL
@@ -583,7 +600,7 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
     x$ps_over_65 <- x$ps_25_to_64 <- NULL
   }
   if (depended_var == "BCG administration years") {
-    x$`Including minimal assumed years` <- NULL
+    x$`BCG admin years (Imp)` <- NULL
   } else {
     x$`BCG administration years` <- NULL
   }
@@ -610,12 +627,14 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   s$order <- 1:nrow(s)
   s$Pval <- formatC(s$`Pr(>|t|)`, format = "e", digits = 2)
   s[s$`Pr(>|t|)`>.1, 'Pval'] <- ''
-  s$Colour <- ifelse(rownames(s) == 'BCG administration years',
+  s$Colour <- ifelse(rownames(s) %in% c('BCG administration years','BCG admin years (Imp)'),
                      'red', 'black')
-  coefplot::coefplot(res2, sort = "magnitude") + 
-    geom_text(data=s,aes(x=Estimate,y=order,label=Pval),vjust=-.5, hjust=.5) +
+  g <- coefplot::coefplot(res2, sort = "magnitude") + 
+    geom_text(data=s,aes(x=Estimate,y=order,label=Pval),vjust=-.4, hjust=.5) +
     xlab('Beta coefficient') +
-    theme(axis.text.y = element_text(colour = s$Colour))
+    theme(axis.text.y = element_text(colour = s$Colour),
+          axis.text=element_text(size=12,face="bold"))
+  g
 }
 
 
@@ -664,6 +683,45 @@ fig2 <- function() {
             ncol = 2, nrow = 2, labels = letters[1:4])
   ggsave('../Covid_19_Research/Fig2.eps', width = 9, height = 9)
 }
+
+fig4 <- function() {
+  countries <- get_Danielle_data()
+  covid <- get_worldometers_data(as.Date('2020-04-20'))
+  var_align <- 'total_deaths_per_1M'
+  val_align <- DEFAULT_MIN_VAL
+  covid <- align_by_var_and_val(covid, var=var_align, val_align)
+  
+  outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
+  covid <- covid[!is.na(covid[,outcome]), ]
+  covid <- droplevels(covid)
+  days_outcome <- 15
+  
+  x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
+  g <- multi_var(x, outcome=outcome,
+                 depended_var="BCG administration years",
+                        remove_BCG=FALSE, remove_ps=TRUE, get_data=FALSE,
+                        ps25only=FALSE)
+}
+
+fig5 <- function() {
+  countries <- get_Danielle_data()
+  covid <- get_worldometers_data(as.Date('2020-04-20'))
+  var_align <- 'total_deaths_per_1M'
+  val_align <- DEFAULT_MIN_VAL
+  covid <- align_by_var_and_val(covid, var=var_align, val_align)
+  
+  outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
+  covid <- covid[!is.na(covid[,outcome]), ]
+  covid <- droplevels(covid)
+  days_outcome <- 15
+  
+  x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
+  g <- outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
+                    return_fig5=TRUE)
+  ggsave('../Covid_19_Research/Fig5.eps', width=8, height = 8)
+  ggsave('../Covid_19_Research/Fig5.pdf', width=8, height = 8)
+}
+
 
 main <- function() {
   rm(list=ls())

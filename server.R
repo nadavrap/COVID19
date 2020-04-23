@@ -101,7 +101,7 @@ function(input, output, session) {
         
         g2 <- outcome_plot(countriesBCG(), input$var2plot)
         #grid.arrange(g1, g2, ncol=1, rel_heights = c(1/10, 9/10))
-        cowplot::plot_grid(g1, g2, ncol=1, rel_heights = c(3/10, 7/10))
+        cowplot::plot_grid(g1, g2, ncol=1, rel_heights = c(1/4, 3/4))
         #cowplot::plot_grid(g1, g2, align = "v", nrow = 2, rel_heights = c(2/3, 1/3))
     })
     
@@ -127,8 +127,8 @@ function(input, output, session) {
     
     output$multivarOut <- renderPlot({
         multi_var(countriesBCG(), input$var2plot, depended_var=input$depended_var,
-                  remove_BCG=input$removeBCG, remove_ps=input$removePS,
-                  ps25only=input$ps25only)
+                  remove_BCG=FALSE, remove_ps=TRUE, #remove_ps=input$removePS
+                  )
     })
     
     # Save plots
@@ -160,10 +160,9 @@ function(input, output, session) {
         content = function(file) {
             write.csv(multi_var(countriesBCG(), input$var2plot, 
                                 depended_var=input$depended_var,
-                                remove_BCG=input$removeBCG, 
-                                remove_ps=input$removePS,
-                                get_data=TRUE,
-                                ps25only=input$ps25only),
+                                remove_BCG=FALSE, 
+                                remove_ps=TRUE,#remove_ps=input$removePS,
+                                get_data=TRUE),
                       file, row.names = TRUE)   
         }
     )
