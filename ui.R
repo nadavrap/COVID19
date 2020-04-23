@@ -85,7 +85,7 @@ shinyUI(navbarPage("COVID19",
                     checkboxInput('ps25only', 'Remove ps25 and ps65', value = FALSE),
                     sliderInput('maxDaysOutcome', 'Outcome at day', min=1, 
                                 max=max(worldometer$Days),
-                                value=20, step=1, round=TRUE),
+                                value=10, step=1, round=TRUE),
                 ),
                 
                 mainPanel(
@@ -100,12 +100,12 @@ shinyUI(navbarPage("COVID19",
                                 tabPanel("Plot", plotOutput("plotW1")),
                                 tabPanel("Regression",
                                          textOutput("regression_output"),
-                                         plotOutput("plotRegression", height=1500),
+                                         plotOutput("plotRegression", height=1100),
                                          downloadButton('downloadPlot', 'Download Plot')),
                                 tabPanel("Correlations", plotOutput("corPlot", height = 500),
                                          downloadButton('downloadCors', 'Download Plot'),),
                                 tabPanel('Multivariable', plotOutput('multivarOut', height = 500),
-                                         downloadButton('downloadMultivarDarta', 'Download Data'),),
+                                         downloadButton('downloadMultivarDarta', 'Download Data'),)
                                 #tabPanel('Decision Tree', plotOutput('decisionTree'))
                                 #tabPanel("Summary", verbatimTextOutput("summary")),
                     )

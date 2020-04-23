@@ -314,28 +314,28 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   #comp <- lapply(1:2, function(i) lapply((i+1):3, function(j) c(i,j)))
   #levels(x$BCG2Groups) <- gsub(" ", "\n", levels(x$BCG2Groups))
   #g1 <- ggboxplot(x, x = "BCG2Groups", y = var, color = "BCG2Groups", add = c("jitter"), palette = "jco") +
-  g1 <- ggboxplot(x, x = "BCG_for_all", y = var, color = "BCG_for_all", add = c("jitter"), palette = "jco") + 
-    stat_compare_means() +
-    theme(legend.position = "none")
+  # g1 <- ggboxplot(x, x = "BCG_for_all", y = var, color = "BCG_for_all", add = c("jitter"), palette = "jco") + 
+  #   stat_compare_means() +
+  #   theme(legend.position = "none")
   #, plot.margin = unit(c(1,1,1,1), "lines")
-  g2 <- ggboxplot(x, x = "BCG3Groups", y = var, color = "BCG3Groups", add = c("jitter"), palette = "jco") + 
-    stat_compare_means(label.y = min(x[,var])) + 
-    stat_compare_means(comparisons = comp_list(nlevels(x$BCG3Groups)),
-                       label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
-    theme(legend.position = "none") +
-    #, plot.margin = unit(c(2,0,0,0), "lines")
-    expand_limits(y=max(x[,var])*1.2)
-  g3 <- ggboxplot(x, x = "TBcases5Groups", y = var, color = "TBcases5Groups", add = c("jitter"), palette = "jco") +
-    stat_compare_means(label.y = min(x[,var])) +
-    stat_compare_means(comparisons = comp_list(nlevels(x$TBcases5Groups)),
-                       label.y = max(x[,var])*c(.9,1,.8,1.1,.95)) +
-    theme(legend.position = "none")+
-    expand_limits(y=max(x[,var])*1.2)
+  # g2 <- ggboxplot(x, x = "BCG3Groups", y = var, color = "BCG3Groups", add = c("jitter"), palette = "jco") + 
+  #   stat_compare_means(label.y = min(x[,var])) + 
+  #   stat_compare_means(comparisons = comp_list(nlevels(x$BCG3Groups)),
+  #                      label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+  #   theme(legend.position = "none") +
+  #   #, plot.margin = unit(c(2,0,0,0), "lines")
+  #   expand_limits(y=max(x[,var])*1.2)
+  # g3 <- ggboxplot(x, x = "TBcases5Groups", y = var, color = "TBcases5Groups", add = c("jitter"), palette = "jco") +
+  #   stat_compare_means(label.y = min(x[,var])) +
+  #   stat_compare_means(comparisons = comp_list(nlevels(x$TBcases5Groups)),
+  #                      label.y = max(x[,var])*c(.9,1,.8,1.1,.95)) +
+  #   theme(legend.position = "none")+
+  #   expand_limits(y=max(x[,var])*1.2)
   
-  g5 <- ggboxplot(x, x = "TB_high", y = var, color = "TB_high", add = c("jitter"), palette = "jco") +
-    stat_compare_means() +
-    theme(legend.position = "none")+
-    expand_limits(y=max(x[,var])*1.2)
+  # g5 <- ggboxplot(x, x = "TB_high", y = var, color = "TB_high", add = c("jitter"), palette = "jco") +
+  #   stat_compare_means() +
+  #   theme(legend.position = "none")+
+  #   expand_limits(y=max(x[,var])*1.2)
   
   # Correlated BCG administration years with outcome
   names(x)[names(x) == "BCG administration years"] <- "BCG_administration_years"
@@ -461,11 +461,11 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   
   ###### BACK TO NADAV'S CODE
   
-  ggarrange(g1, g2, gscatter, g3, g5, gscatterTB,gscatter_under_25, 
+  ggarrange(gscatter, gscatterTB,gscatter_under_25, 
             gscatter_25_to_64, gscatter_over_65,gscatterHIV,
             gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share, gscatter_median_down, gscatter_median_up, g15,
-            labels = letters[1:16],
-            ncol = 2, nrow = 8)
+            labels = letters[1:12],
+            ncol = 2, nrow = 6)
 }
 
 get_ecdc_data <- function() {
@@ -546,6 +546,16 @@ get_stats_table <- function(var_align, val_align,
     #theme(legend.position = "bottom", legend.box = "vertical")
 }
 
+prety_names <- function(n) {
+  # Replace '_' in names with ' '
+  n <- gsub('_' ,' ', n)
+  n <- gsub('`' ,'', n)
+  all_lower_names <- n == tolower(n)
+  n[all_lower_names] <- 
+    stringr::str_to_sentence(n[all_lower_names])
+  n
+}
+
 multi_var <- function(x, outcome, depended_var="BCG administration years",
                       remove_BCG=FALSE, remove_ps=FALSE, get_data=FALSE,
                       ps25only=FALSE) {
@@ -588,12 +598,8 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   x2 <- as.data.frame(cbind(xs, x[,!numeric_cols, drop=FALSE]))
   #res <- lm(as.formula(paste(outcome, '~ .')), x)
   res2 <- lm(as.formula(paste(outcome, '~ .')), x2)
-  # Replace '_' in names with ' '
-  names(res2$coefficients) <- gsub('_' ,' ', names(res2$coefficients))
-  names(res2$coefficients) <- gsub('`' ,'', names(res2$coefficients))
-  all_lower_names <- names(res2$coefficients) == tolower(names(res2$coefficients))
-  names(res2$coefficients)[all_lower_names] <- 
-    stringr::str_to_sentence(names(res2$coefficients)[all_lower_names])
+  names(res2$coefficients) <- prety_names(names(res2$coefficients))
+  
   #res3 <- lmer(as.formula(paste(outcome, '~ .')), x)
   #summ(res2)
   if (get_data) {
