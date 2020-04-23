@@ -1,19 +1,35 @@
----
-title: "R Notebook"
-output: html_notebook
----
+This web site is supporting the work described on [medRxiv](http://medRxiv.org)
+done by:
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+1. Danielle Klinger ^1
+2. Ido Blass ^1
+3. Nadav Rappoport ^2
+4. Michal Linial ^1
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+^[1] The Hebrew University
+^[2] Ben-Gurion University
 
-```{r}
-plot(cars)
-```
+The basic idea is to test whether BCG vaccination regimes in different countries
+is associated with different COVID-19 pandemic's oucome.
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+## Alignment
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+As different countries were exposed to the virus on different dates, and as
+countries differ by population sizes, the first think to do is to align the 
+dates of reports.
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+Alignement can be done based on first date a certain threshold was observed.
+For example, the date of first report with more than 0.5 deaths per million.
+
+
+
+## Updates
+This web sites keeps to be updated and retrieve data on a daily basis. If you 
+want to limit the 'available' data to a certain date, chose that date on 
+'Latest Date:' button on top.
+
+## Code availability
+This website was build in R Shiny app.
+
+Code for this web site is available on [github.com/nadavrap/COVID19](https://github.com/nadavrap/COVID19)
 

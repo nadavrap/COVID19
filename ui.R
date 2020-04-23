@@ -95,8 +95,12 @@ shinyUI(navbarPage("COVID19",
                           "assigned to 'Align countries by variable having at",
                           "least'."),
                     # Output: Tabset w/ plot, summary, and table ----
+                    
                     tabsetPanel(type = "tabs",
-                                selected='Regression',
+                                selected='Plot',
+                                tabPanel("Intro",
+                                         includeMarkdown("./md/intro.Rmd"),
+                                         hr()),
                                 tabPanel("Plot", plotOutput("plotW1")),
                                 tabPanel("Regression",
                                          textOutput("regression_output"),
