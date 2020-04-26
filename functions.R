@@ -391,7 +391,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   #######################################
   # Correlated BCG administration years with outcome
   # age group: 0-24
-  names(x)[names(x) == "ps_under_25"] <- "ps_under_25"
+  
   gscatter_under_25 <- ggscatter(data=x, x = "ps_under_25", y = var,
                                  xlab = "Relative BCG coverage, below 24 years population share",
                                  ylab = "Deaths per 1M",
@@ -401,7 +401,6 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   ) + stat_cor(method = "pearson", label.x.npc = "center")
   
   # age group: 25-64
-  names(x)[names(x) == "ps_25_to_64"] <- "ps_25_to_64"
   gscatter_25_to_64 <- ggscatter(data=x, x = "ps_25_to_64", y = var,
                                  xlab = "Relative BCG coverage, 25-64 years population share",
                                  ylab = "Deaths per 1M",
@@ -411,7 +410,6 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   ) + stat_cor(method = "pearson", label.x.npc = "center")
   
   # age group: 65+
-  names(x)[names(x) == "ps_over_65"] <- "ps_over_65"
   gscatter_over_65 <- ggscatter(data=x, x = "ps_over_65", y = var,
                                 xlab = "Relative BCG coverage, above 65 years population share",
                                 ylab = "Deaths per 1M",
@@ -421,7 +419,6 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   ) + stat_cor(method = "pearson", label.x.npc = "center")
                    
   # female share
-  names(x)[names(x) == "female_share"] <- "female_share"
   gscatter_female_share <- ggscatter(data=x, x = "female_share", y = var,
                                 xlab = "female_share",
                                 ylab = "Deaths per 1M",

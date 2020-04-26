@@ -5,6 +5,7 @@
 #setwd("/Users/dedeklinger/Desktop/COVID_BCG/date_files_world_meter")
 library(reticulate)
 library(dplyr)
+library(remote)
 #use_python("python3", required = T)
 
 
@@ -18,11 +19,19 @@ get_worlodmeters_raw_data <- function(end_date=NA) {
     return(readRDS(fname))
   }
   
+  remotes::install_github("rstudio/reticulate")
+  
   virtualenv_create(envname = 'python3_env', 
                     python = 'python3')#/usr/bin/
+  # virtualenv_install('python3_env', 
+  #                    packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
+  # Problem with new pip version is solved by downgrading:
+  virtualenv_install('python3_env',
+                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4',
+                                  #"pip==20.0"), ignore_installed = TRUE)
+                     ))
+  #reticulate::use_virtualenv("python37_env", required = TRUE)
   
-  virtualenv_install('python3_env', 
-                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
   
   tryCatch({
     py_run_file("./worldometers_extract.py")
