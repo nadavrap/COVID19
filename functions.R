@@ -7,6 +7,7 @@ library(jtools) # for summ function
 library(rpart) # for decision tree
 library(rpart.plot)
 library(rattle) # for fancyRpartPlot function
+source('worldometers_extract.R')
 
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
 
@@ -19,7 +20,7 @@ get_raw_data <- function() {
   # 
   # for_gs <- gs_key("1V9zUidoZl9j-MywE9tW49hCfHfv38I_fcGm-7Tt3ryI")
   # for_gs_sheet <- gs_read(for_gs)
-  myCSV <- read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQLpKsvPNrQaJmCu4zdr1oLnZjcl9B3UiNv29BFQTnACrBQ5CAl19N5ZvSv3WfGclSiuL-t3rEWFSqa/pub?gid=1666407311&single=true&output=csv')
+  #myCSV <- read.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vQLpKsvPNrQaJmCu4zdr1oLnZjcl9B3UiNv29BFQTnACrBQ5CAl19N5ZvSv3WfGclSiuL-t3rEWFSqa/pub?gid=1666407311&single=true&output=csv')
   #myCSV<-read.csv("http://docs.google.com/spreadsheets/d/1V9zUidoZl9j-MywE9tW49hCfHfv38I_fcGm-7Tt3ryI/pub?output=csv")
   d <- read.csv('./data/Corona BCG initial table.csv')
   names(d) <- gsub('\\.', ' ', gsub('\\.\\.', ' ', names(d)))
@@ -201,14 +202,11 @@ get_covid_normalized <- function() {
   covid
 }
 
-get_raw_worldometer_data <- function(end_date) {
-  source('./worldometers_extract.R')
-  d <- get_worlodmeters_raw_data(end_date)
-}
 
 get_worldometers_data <- function(end_date) {
   #covid <- read.csv('./data/world_metes_COVID_data_all_dates.csv', check.names = FALSE)
-  covid <- get_raw_worldometer_data(end_date)
+  covid <- get_worlodmeters_raw_data()
+  
   names(covid)[names(covid)=='Country.Other'] <- 'Country'
   covid$deaths_per_0.5M <- NULL
   # There are country names with leading spaces
@@ -224,6 +222,7 @@ get_worldometers_data <- function(end_date) {
   # First, integer to character, and then add space on second character
   covid$Date <- gsub('^([0-9]{1})([0-9]{2})$', '\\1 \\2', as.character(covid$Date))
   covid$Date <- as.Date(covid$Date, format='%m %d')
+  covid <- covid[!is.na(covid$Date) & covid$Date <= end_date, ]
   # Many -1s, repalce with NA
   covid[covid==-1] <- NA
   covid$start_date <- NULL
@@ -471,8 +470,8 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
 }
 
 get_ecdc_data <- function() {
-  data <- utils::read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", 
-                   na.strings="", fileEncoding="UTF-8-BOM")
+  utils::read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
+                  na.strings="", fileEncoding="UTF-8-BOM")
 }
 
 
@@ -654,7 +653,7 @@ get_regression_plot_only <- function(val_align=.5,
                                      var_align='total_deaths_per_1M',
                                      var_outcome='total_deaths_per_1M', #'critical_per_1M'#
                                      days_outcome=15) {
-  countries <- get_Danielle_data()
+  #countries <- get_Danielle_data()
   covid <- get_worldometers_data(as.Date('2020-04-20'))
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   covid <- covid[!is.na(covid[,var_outcome]), ]
@@ -676,13 +675,13 @@ fig2 <- function() {
   g4 <- get_regression_plot_only(val_align = 1.5, var_align='total_deaths_per_1M',
                                  var_outcome='total_cases_per_1M',days_outcome=15) +
     ggtitle('CPM diff at day 15, aligned by 1.5 DPM')
-  g <- ggarrange(g1, g2, g3, g4,
+  ggarrange(g1, g2, g3, g4,
             ncol = 2, nrow = 2, labels = letters[1:4])
   ggsave('../Covid_19_Research/Fig2.eps', width = 9, height = 9)
 }
 
 fig4 <- function() {
-  countries <- get_Danielle_data()
+  #countries <- get_Danielle_data()
   covid <- get_worldometers_data(as.Date('2020-04-20'))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
@@ -694,14 +693,14 @@ fig4 <- function() {
   days_outcome <- 15
   
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
-  g <- multi_var(x, outcome=outcome,
-                 depended_var="BCG administration years",
-                        remove_BCG=FALSE, remove_ps=TRUE, get_data=FALSE,
-                        ps25only=FALSE)
+  multi_var(x, outcome=outcome,
+            depended_var="BCG administration years",
+            remove_BCG=FALSE, remove_ps=TRUE, get_data=FALSE,
+            ps25only=FALSE)
 }
 
 fig5 <- function() {
-  countries <- get_Danielle_data()
+  #countries <- get_Danielle_data()
   covid <- get_worldometers_data(as.Date('2020-04-20'))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
@@ -713,8 +712,8 @@ fig5 <- function() {
   days_outcome <- 15
   
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
-  g <- outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
-                    return_fig5=TRUE)
+  outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
+               return_fig5=TRUE)
   ggsave('../Covid_19_Research/Fig5.eps', width=8, height = 8)
   ggsave('../Covid_19_Research/Fig5.pdf', width=8, height = 8)
 }

@@ -2,44 +2,34 @@
 #   files from the world meter  #
 #                               #
 # @author Danielle Klinger
-#setwd("/Users/dedeklinger/Desktop/COVID_BCG/date_files_world_meter")
+# Modified by Nadav Rappoport
+
 library(reticulate)
 library(dplyr)
-#library(remote)
-#use_python("python3", required = T)
 
-
-get_worlodmeters_raw_data <- function(end_date=NA) {
-  if (is.na(end_date)) {
-    end_date <- Sys.Date()
-  }
-  
-  fname <- paste0('data/worldometer_',format(end_date, "%Y_%m_%d"), '.rds')
-  if (file.exists(fname)) {
+get_worlodmeters_raw_data <- function() {
+  fname <- 'data/latest_worldometer_download.rds'
+  cache_fname_date <- 'data/latest_worldometer_download_date.txt'
+  if(file.exists(fname) && file.exists(cache_fname_date) &&
+     readLines(cache_fname_date) == as.character(Sys.Date())){
     return(readRDS(fname))
   }
   
-  #remotes::install_github("rstudio/reticulate")
-  
   virtualenv_create(envname = 'python3_env', 
                     python = 'python3')#/usr/bin/
-  # virtualenv_install('python3_env', 
-  #                    packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
-  # Problem with new pip version is solved by downgrading:
   virtualenv_install('python3_env',
-                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4')#,
-                                  #"pip==20.0"), ignore_installed = TRUE)
-                     )
-  #reticulate::use_virtualenv("python37_env", required = TRUE)
-  
+                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
+  use_virtualenv("python3_env", required = TRUE)
   
   tryCatch({
+    #source_python("./worldometers_extract.py")
     py_run_file("./worldometers_extract.py")
     }, error = function(e) {
-      warning('Could not run worldometes_extract.py')
+      warning(paste('Could not run worldometes_extract.py,',
+      'returning latest version from', readLines(cache_fname_date)))
+      return(readRDS(fname))
     })
-  #source_python("./worldometers_extract.py")
-  
+
   # country_list <- c("Italy", "Belgium", "Netherlands", "Spain","France","Switzerland","Germany","Czechia",
   #                   "Austria","UK","Ireland","Portugal","Hungary","USA","Canada","Sweden",
   #                   "Iran","Denmark","Norway","Ecuador","Romania","DominicanRepublic","Turkey","Serbia","Greece",
@@ -94,5 +84,6 @@ get_worlodmeters_raw_data <- function(end_date=NA) {
     mutate(total_recovered_per_1M = TotalRecovered / `population size (M)`) %>%
     dplyr::select(-c(9,10))
   saveRDS(all_dates_merge, fname)
+  writeLines(as.character(Sys.Date()), cache_fname_date)
   all_dates_merge
 }
