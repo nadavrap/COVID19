@@ -5,7 +5,7 @@
 #setwd("/Users/dedeklinger/Desktop/COVID_BCG/date_files_world_meter")
 library(reticulate)
 library(dplyr)
-library(remote)
+#library(remote)
 #use_python("python3", required = T)
 
 
@@ -19,7 +19,7 @@ get_worlodmeters_raw_data <- function(end_date=NA) {
     return(readRDS(fname))
   }
   
-  remotes::install_github("rstudio/reticulate")
+  #remotes::install_github("rstudio/reticulate")
   
   virtualenv_create(envname = 'python3_env', 
                     python = 'python3')#/usr/bin/
@@ -27,9 +27,9 @@ get_worlodmeters_raw_data <- function(end_date=NA) {
   #                    packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
   # Problem with new pip version is solved by downgrading:
   virtualenv_install('python3_env',
-                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4',
+                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4')#,
                                   #"pip==20.0"), ignore_installed = TRUE)
-                     ))
+                     )
   #reticulate::use_virtualenv("python37_env", required = TRUE)
   
   
@@ -50,7 +50,7 @@ get_worlodmeters_raw_data <- function(end_date=NA) {
   file_names <- dir("./data/worldodmeter", full.names=TRUE)
   all_dates_df <- do.call(rbind, lapply(file_names, read.csv, stringsAsFactors = FALSE)) 
   all_dates_df <- as.data.frame(apply(all_dates_df, 2, function(x)gsub('\\s+', '', x))) %>%
-    select(-c(1)) #%>%
+    dplyr::select(-c(1)) #%>%
     #filter(Country.Other %in% country_list)
   
   all_dates_df <- with(all_dates_df,  all_dates_df[order(Country.Other) , ])
@@ -59,7 +59,7 @@ get_worlodmeters_raw_data <- function(end_date=NA) {
   #setwd("/Users/dedeklinger/Desktop/COVID_BCG")
   # this is the data from google docs (only the pop_size_M and start_date)
   #info_df <- read.csv(file = './data/Corona_BCG_edited.csv') %>%
-  #  select(c(1,10,11))
+  #  dplyr::select(c(1,10,11))
   info_df <- readRDS('data/latest_download.rds')[,c("Country", "population size (M)", "Date_1st_sick_perM")]
   if ('' %in% info_df$Country) {
     info_df <- droplevels(info_df[1:(which(info_df$Country=='')[1]-1),])
@@ -92,7 +92,7 @@ get_worlodmeters_raw_data <- function(end_date=NA) {
     mutate(total_deaths_per_1M = TotalDeaths / `population size (M)`) %>%
     mutate(critical_per_1M = Serious.Critical / `population size (M)`) %>%
     mutate(total_recovered_per_1M = TotalRecovered / `population size (M)`) %>%
-    select(-c(9,10))
+    dplyr::select(-c(9,10))
   saveRDS(all_dates_merge, fname)
   all_dates_merge
 }

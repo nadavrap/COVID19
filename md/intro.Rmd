@@ -3,7 +3,7 @@ title: "Introduction for this COVID app"
 output: html_notebook
 ---
 
-This web site is supporting the work described on [medRxiv](http://medRxiv.org)
+This web site is supporting the work described on [medRxiv (doi.org/10.1101/2020.04.23.20077123)](https://doi.org/10.1101/2020.04.23.20077123)
 done by:
 
 1. Danielle Klinger ^1
@@ -31,10 +31,11 @@ For example, the date of first report with more than 0.5 deaths per million.
 ## Updates
 This web sites keeps to be updated and retrieve data on a daily basis. If you 
 want to limit the 'available' data to a certain date, chose that date on 
-'Latest Date:' button on top.
+'Latest Date:' button on top. Though the the manuscript results are based on 
+results from April 20th, 2020.
 
 ## Code availability
 This website was build in R Shiny app.
 
-Code for this web site is available on [github.com/nadavrap/COVID19](https://github.com/nadavrap/COVID19)
-
+Code for this ShinyApp is available on 
+[github.com/nadavrap/COVID19](https://github.com/nadavrap/COVID19).
