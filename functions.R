@@ -543,7 +543,7 @@ get_stats_table <- function(var_align, val_align,
     ggtitle('Outcome\'s correlation to BCG administration period') + 
     guides(size=guide_legend(title="Number of countries")) +
     guides(fill = guide_legend(override.aes = list(size=10))) +
-    scale_fill_manual(values = unique(d$colour)) +
+    scale_fill_manual(values = col_map[col_map %in% d$colour]) +
     xlab('Days from alignment')
     #theme(legend.position = "bottom", legend.box = "vertical")
 }

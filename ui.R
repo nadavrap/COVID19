@@ -59,7 +59,7 @@ shinyUI(navbarPage("COVID19",
        tabPanel("Worldometer Data",
                 sidebarPanel(
                     #width = 3,
-                    dateInput("end_date", "Latest Date:", value = "2020-04-20"),
+                    dateInput("end_date", "Latest Date:", value = "2020-04-20", max = Sys.Date()),
                     selectInput('alignby', 'Align countries by variable', 
                                 names(worldometer)[2:(ncol(worldometer)-1)], 
                                 'total_deaths_per_1M'),
