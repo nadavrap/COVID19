@@ -528,8 +528,8 @@ get_stats_table <- function(var_align, val_align,
   d$Correlation <- round(d$cor, 2)
   # Set factor level's order
   d$Outcome <- factor(d$Outcome, 
-                      levels = c("total_cases_per_1M", "total_deaths_per_1M", 
-                                 "critical_per_1M", "total_recovered_per_1M"))
+                      levels = c("total_cases_per_1M", "critical_per_1M",
+                                 "total_deaths_per_1M", "total_recovered_per_1M"))
   d <- droplevels(d)
   ggplot(d,aes(x=Days,y= fct_rev(Outcome), fill = Pval,
                label=Correlation))+
