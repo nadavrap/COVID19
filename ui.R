@@ -37,8 +37,8 @@ shinyUI(navbarPage("COVID19",
                     
                     checkboxInput('logscale', 'Log 10 Scale', value = FALSE),
                     selectInput("countries", "Select countries",
-                                choices = levels(covid$Country),
-                                selected = levels(covid$Country),
+                                choices = unique(covid$Country),
+                                selected = unique(covid$Country),
                                 multiple = TRUE
                     ),
                     sliderInput('maxDays', 'Outcome at day', min=1, 

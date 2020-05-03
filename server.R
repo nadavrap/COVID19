@@ -14,7 +14,9 @@ function(input, output, session) {
         #df <- droplevels(df[df$Var==input$y,])
         df <- get_covid_normalized()
         df <- df[df$Var==input$y,]
+        warning(paste('DIM df:', dim(df)))
         df <- df[df$Country %in% input$countries, ]
+        warning(paste('DIM df:', dim(df)))
         droplevels(df)
     })
 
