@@ -22,7 +22,7 @@ function(input, output, session) {
         covid <- get_worldometers_data(input$end_date)
         covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
         covid <- covid[!is.na(covid[,input$var2plot]), ]
-        #covid <- covid[covid$Country %in% input$country_list,]
+        covid <- covid[covid$Country %in% input$selected_countries,]
         droplevels(covid)
     })
     
@@ -30,9 +30,8 @@ function(input, output, session) {
         covid <- get_worldometers_data(input$end_date)
         covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
         covid <- covid[!is.na(covid[,input$var2plot]), ]
-        #covid <- covid[covid$Country %in% input$country_list,]
+        covid <- droplevels(covid[covid$Country %in% input$selected_countries,])
         covid <- droplevels(covid)
-        #warning(nrow(covid))
         
         x <- aggregate_and_merge_countries(covid, input$var2plot, input$maxDaysOutcome)
         x
@@ -118,7 +117,8 @@ function(input, output, session) {
     
     output$corPlot <- renderPlot({
         get_stats_table(input$alignby, input$alignvalue, 
-                        depended_var=input$depended_var, input$end_date)
+                        depended_var=input$depended_var, input$end_date,
+                        input$selected_countries)
     })
     
     output$decisionTree <- renderPlot({

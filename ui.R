@@ -88,6 +88,11 @@ shinyUI(navbarPage("COVID19",
                     sliderInput('maxDaysOutcome', 'Outcome at day', min=1, 
                                 max=max(worldometer$Days),
                                 value=10, step=1, round=TRUE),
+                    selectInput("selected_countries", "Select countries",
+                                choices = unique(worldometer$Country),
+                                selected = unique(worldometer$Country),
+                                multiple = TRUE
+                    ),
                 ),
                 
                 mainPanel(

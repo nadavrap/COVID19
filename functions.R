@@ -503,9 +503,12 @@ get_stats_table_outcome <- function(covid, outcome,
 
 get_stats_table <- function(var_align, val_align,
                             depended_var="BCG administration years",
-                            end_date) {
+                            end_date, selected_countries=NULL) {
   
   covid <- get_worldometers_data(end_date)
+  if (!is.null(selected_countries)) {
+    covid <- droplevels(covid[covid$Country %in% selected_countries,])
+  }
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
   
