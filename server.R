@@ -11,12 +11,12 @@ function(input, output, session) {
     
     dataset <- reactive({
         #df <- to_long(get_raw_data())
-        #df <- droplevels(df[df$Var==input$y,])
         df <- get_covid_normalized()
         df <- df[df$Var==input$y,]
-        warning(paste('DIM df:', dim(df)))
         df <- df[df$Country %in% input$countries, ]
-        warning(paste('DIM df:', dim(df)))
+        if (input$logscale) { # Need to remove zeros
+            df <- df[df$value != 0,]
+        }
         droplevels(df)
     })
 
@@ -40,9 +40,10 @@ function(input, output, session) {
     })
     
     output$plot <- renderPlot({
+        miny <- ifelse(input$logscale, 1, 0)
         p <- ggplot(dataset(), aes(x=Days,y=value, col=Country)) +
             coord_cartesian(xlim=c(0, max(dataset()[,'Days'])),
-                            ylim=c(0,min(input$ylim, max(dataset()[,'value'])))) +
+                            ylim=c(miny,min(input$ylim, max(dataset()[,'value'])))) +
             geom_line() +
             ylab(input$y) +
             guides(col = guide_legend(nrow = 38)) +
