@@ -9,7 +9,7 @@ theme_set(theme_bw())
 #d <- get_raw_data()
 #df <- to_long(d)
 covid <- get_covid_normalized()
-worldometer <- get_worldometers_data(as.Date("2020-04-20"))
+worldometer <- get_worldometers_data(as.Date("2020-05-05"))
 all_countries <- sort(unique(worldometer$Country))
 worldometer <- align_by_var_and_val(worldometer, var='total_deaths_per_1M', DEFAULT_MIN_VAL)
 
@@ -59,7 +59,7 @@ shinyUI(navbarPage("COVID19",
        tabPanel("Worldometer Data",
                 sidebarPanel(
                     #width = 3,
-                    dateInput("end_date", "Latest Date:", value = "2020-04-20", 
+                    dateInput("end_date", "Latest Date:", value = "2020-05-05", 
                               max = Sys.Date(),
                               min=as.Date('2020-01-29')),
                     selectInput('alignby', 'Align countries by variable', 
@@ -114,7 +114,8 @@ shinyUI(navbarPage("COVID19",
                                          plotOutput("plotRegression", height=1300),
                                          downloadButton('downloadPlot', 'Download Plot')),
                                 tabPanel("Correlations", plotOutput("corPlot", height = 500),
-                                         downloadButton('downloadCors', 'Download Plot'),),
+                                         downloadButton('downloadCors', 'Download Plot'),
+                                         downloadButton('downloadCorsData', 'Download Data'),),
                                 tabPanel('Multivariable', plotOutput('multivarOut', height = 500),
                                          downloadButton('downloadMultivarDarta', 'Download Data'),)
                                 #tabPanel('Decision Tree', plotOutput('decisionTree'))

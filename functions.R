@@ -7,6 +7,8 @@ library(jtools) # for summ function
 library(rpart) # for decision tree
 library(rpart.plot)
 library(rattle) # for fancyRpartPlot function
+library(parallel)
+library(jmuOutlier) # for permutation test perm.cor.test
 source('worldometers_extract.R')
 
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
@@ -476,7 +478,8 @@ get_ecdc_data <- function() {
 
 
 get_stats <- function(covid, outcome, days, 
-                      depended_var="BCG administration years") {
+                      depended_var="BCG administration years",
+                      premute_test=FALSE) {
   d <- droplevels(covid[!is.na(covid[, outcome]), ])
   x <- aggregate_and_merge_countries(d, outcome, days)
   
@@ -484,26 +487,39 @@ get_stats <- function(covid, outcome, days,
   x <- x[complete.cases(x),]
   if(nrow(x) < 2) {
     cor_res <- list(estimate=NA, p.value=NA)
+    permute_pvalP <- permute_pvalS <- NA
   } else {
     cor_res <- cor.test(x[,1], x[,2], use = 'complete.obs')
+    if (premute_test) {
+      #permute_pval <- mean(unlist(lapply(1:10000, function(i)
+      #  cor.test(x[,1], sample(x[,2]))$p.value < cor_res$p.value)))
+      permute_pvalP <- perm.cor.test(x[,1], x[,2], "two.sided", "pearson", num.sim = 2000)$p.value
+      #permute_pvalS <- perm.cor.test(x[,1], x[,2], "two.sided", "spearman", num.sim = 2000)$p.value
+    } else {
+      permute_pvalP <- permute_pvalS <- NA
+    }
   }
   return(data.frame(cor=cor_res$estimate, pval=cor_res$p.value,n=nrow(x),
-                    Days=days))
+                    Days=days, permute_pvalP=permute_pvalP))
 }
 
 get_stats_table_outcome <- function(covid, outcome, 
-                                    depended_var="BCG administration years") {
-  d <- as.data.frame(do.call(rbind,
-               lapply(seq(10, 30, 5),
-                      function(days) 
-                        get_stats(covid, outcome, days, depended_var))))
+                                    depended_var="BCG administration years",
+                                    premute_test=FALSE) {
+  d <- as.data.frame(
+    do.call(rbind, lapply(seq(10, 40, 10),
+                                     function(days)
+                                       get_stats(covid, outcome, days, 
+                                                 depended_var,
+                                                 premute_test=premute_test))))
   d$Outcome <- outcome
   d
 }
 
 get_stats_table <- function(var_align, val_align,
                             depended_var="BCG administration years",
-                            end_date, selected_countries=NULL) {
+                            end_date, selected_countries=NULL,
+                            get_data_only=FALSE) {
   
   covid <- get_worldometers_data(end_date)
   if (!is.null(selected_countries)) {
@@ -514,10 +530,17 @@ get_stats_table <- function(var_align, val_align,
   
   outcomes <- c('total_deaths_per_1M', 'critical_per_1M', 'total_recovered_per_1M',
                 'total_cases_per_1M')
+  #parallel::mc
+  # mc.cores = parallel::detectCores()
   d <- do.call(rbind,
                lapply(outcomes, get_stats_table_outcome, covid=covid, 
-                      depended_var=depended_var))
-
+                      # For plotting, there is no need for permutation test
+                      depended_var=depended_var, premute_test=get_data_only))
+  #warning(d[[1]])
+  if(get_data_only) {
+    return(d)
+  }
+  
   d$'-Log10Pval' <- round(-log10(d$pval))
   d$Pval <- factor(ifelse(d$pval<0.001, '<0.001',
                           ifelse(d$pval<0.01, '<0.01',
@@ -534,13 +557,14 @@ get_stats_table <- function(var_align, val_align,
                       levels = c("total_cases_per_1M", "critical_per_1M",
                                  "total_deaths_per_1M", "total_recovered_per_1M"))
   d <- droplevels(d)
+
   ggplot(d,aes(x=Days,y= fct_rev(Outcome), fill = Pval,
                label=Correlation))+
     geom_point(aes(size=n), shape = 21) +
     theme_bw() +
     geom_text() +
     #scale_fill_brewer(palette="Set1") + 
-    scale_size(range = range(d$n), breaks = c(1,5,10,20,30, 40, 50)) +
+    scale_size(range = range(d$n), breaks = c(10, 20, 30, 40, 50)) +
     ylab('Outcome') +
     ggtitle('Outcome\'s correlation to BCG administration period') + 
     guides(size=guide_legend(title="Number of countries")) +
@@ -571,7 +595,7 @@ prety_names <- function(n) {
 }
 
 multi_var <- function(x, outcome, depended_var="BCG administration years",
-                      remove_BCG=FALSE, remove_ps=FALSE, get_data=FALSE,
+                      remove_BCG=FALSE, remove_ps=FALSE, get_data_only=FALSE,
                       ps25only=FALSE) {
   #x <- aggregate_and_merge_countries(covid, outcome, days)
   names(x)[names(x) == 'TB_high'] <- 'High Tuberculosis'
@@ -618,7 +642,7 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   
   #res3 <- lmer(as.formula(paste(outcome, '~ .')), x)
   #summ(res2)
-  if (get_data) {
+  if (get_data_only) {
     return(summary(res2)$coefficients)
   }
   s <- as.data.frame(summary(res2)$coefficients)
@@ -657,7 +681,7 @@ get_regression_plot_only <- function(val_align=.5,
                                      var_outcome='total_deaths_per_1M', #'critical_per_1M'#
                                      days_outcome=15) {
   #countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-04-20'))
+  covid <- get_worldometers_data(as.Date('2020-05-05'))
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   covid <- covid[!is.na(covid[,var_outcome]), ]
   covid <- droplevels(covid)
@@ -685,7 +709,7 @@ fig2 <- function() {
 
 fig4 <- function() {
   #countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-04-20'))
+  covid <- get_worldometers_data(as.Date('2020-05-05'))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
@@ -698,13 +722,13 @@ fig4 <- function() {
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   multi_var(x, outcome=outcome,
             depended_var="BCG administration years",
-            remove_BCG=FALSE, remove_ps=TRUE, get_data=FALSE,
+            remove_BCG=FALSE, remove_ps=TRUE, get_data_only=FALSE,
             ps25only=FALSE)
 }
 
 fig5 <- function() {
   #countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-04-20'))
+  covid <- get_worldometers_data(as.Date('2020-05-05'))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
@@ -712,13 +736,55 @@ fig5 <- function() {
   outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
   covid <- covid[!is.na(covid[,outcome]), ]
   covid <- droplevels(covid)
-  days_outcome <- 15
+  days_outcome <- 20
   
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
                return_fig5=TRUE)
-  ggsave('../Covid_19_Research/Fig5.eps', width=8, height = 8)
-  ggsave('../Covid_19_Research/Fig5.pdf', width=8, height = 8)
+  ggsave('../Covid_19_Research/Fig5.eps', width=9, height = 9)
+  ggsave(paste0('../Covid_19_Research/Fig5_', days_outcome, '.pdf'), width=9, height = 9)
+}
+
+permute_test <- function() {
+  set.seed(12345)
+  library(jmuOutlier)    # Used for the permutation test
+  library(uniftest)      # For tests of uniformity of permutation test p-values
+  
+  n<- 15        # Sample size
+  sig<- 0.05    # Choose a desired significance level
+  nrep<- 2000   # No. of repetitions for the MC experiment
+  pvalp<- vector()
+  tstat<- vector()
+  dof<- n-1        #If there is no intercept in the fitted regression, d.o.f. = (n-1)
+  tcrit<- qt(1-0.5*sig, df=dof)   #  2-sided critical value for the t-test
+  beta1<- 0.0      # Intercept value
+  beta2<- 0.0      # The null hypothesis is that Beta2=0
+  x<- rnorm(n)     # Artificial x series, created just once
+  
+  for(i in 1:nrep) {               # Start of the Monte Carlo loop
+    
+    y<- beta1 + beta2*x + rnorm(n)   # The DGP includes an intercept
+    fit<- lm(y ~ x  -1)              # A mis-specified model is estimated (unless Beta1 = 0)
+    t<- unname(coef(summary(fit))[, "t value"])
+    tstat<- c(tstat,t[1])   # Use 1st element because the intercept is omitted from the regression!
+    
+    # The simple t-test is equivalent to testing for a zero correlation between x and y, so:
+    # Compute the p-value of the permutation test based on the correlation coeff. between x and y
+    # (So, this is the "permutation t-test")
+    
+    pvp<- perm.cor.test(x, y, "two.sided", "pearson", num.sim = 2000)$p.value
+    pvalp<- c(pvalp,pvp)
+    
+  }                         # End of the Monte Carlo loop
+  
+  hist(pvalp, main="Distribution of Permutation Test p-Values", xlab="p-Value", freq=FALSE, border="black", col="darkmagenta")               # This distribution of p-values should be uniform on (0,1) if the null is true
+  powerp<- length(pvalp[pvalp <= sig])/nrep          # Power of the Permutation test
+  powerp
+  powert<- length(tstat[abs(tstat) > tcrit])/nrep    # Power of the t-test
+  powert
+  summary(tstat)
+  kolmogorov.unif.test(pvalp)
+  kuiper.unif.test(pvalp)
 }
 
 
@@ -726,7 +792,7 @@ main <- function() {
   rm(list=ls())
   source('./functions.R')
   countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-04-20'))
+  covid <- get_worldometers_data(as.Date('2020-05-05'))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, val_align)

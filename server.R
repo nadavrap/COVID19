@@ -151,11 +151,23 @@ function(input, output, session) {
         content = function(file) {
             ggsave(file, plot=get_stats_table(input$alignby, input$alignvalue, 
                                               depended_var=input$depended_var, input$end_date),
-                   device='pdf', width = 10, height = 7)
+                   device='pdf', width = 12, height = 7)
         }
     )
     
     
+    output$downloadCorsData <- downloadHandler(
+        filename = paste0('COVID_19_stats_table_data' ,
+                          format(Sys.Date(), '%Y_%m_%d'), '.csv'),
+        content = function(file) {
+            write.csv(get_stats_table(input$alignby, input$alignvalue,
+                                      depended_var=input$depended_var,
+                                      input$end_date,
+                                      input$selected_countries,
+                                      get_data=TRUE),
+                      file, row.names = TRUE)
+        }
+    )
     
     output$downloadMultivarDarta <- downloadHandler(
         filename = paste0('COVID_19_Multivariable_Results_' ,
