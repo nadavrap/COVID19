@@ -195,16 +195,16 @@ function(input, output, session) {
     
     observe({
         y <- input$alignby
-        yval <- input$alignvalue
+        #yval <- input$alignvalue
         max_val <- round(max(worldo()[,y], na.rm = TRUE))
         if (max_val > 1000) {
             step <- 50
-            yval <- round(yval)
+            #yval <- round(yval)
         } else {
             step <- .25
             max_val <- 20
         }
-        updateSliderInput(session, "alignvalue", value = yval,
+        updateSliderInput(session, "alignvalue", #value = yval,
                           min = 0, max = max_val, step = step)
     })
     # observe({
