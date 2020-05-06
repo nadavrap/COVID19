@@ -482,7 +482,8 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   
   ggarrange(gscatter, gscatterTB,gscatter_under_25, 
             gscatter_25_to_64, gscatter_over_65,gscatterHIV,
-            gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share, gscatter_median_down, gscatter_median_up, g15,
+            gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share, 
+            gscatter_median_down, gscatter_median_up, g15,
             MCV, RCV,
             labels = letters[1:14],
             ncol = 2, nrow = 7)
@@ -708,21 +709,23 @@ get_regression_plot_only <- function(val_align=.5,
 }
 
 fig2 <- function() {
+  days <- 20
   g1 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
-                                 var_outcome='total_deaths_per_1M',days_outcome=15) +
-    ggtitle('DPM diff at day 15, aligned by 0.5 DPM')
+                                 var_outcome='total_deaths_per_1M',days_outcome=days) +
+    ggtitle(paste0('DPM diff at day ', days, ', aligned by 0.5 DPM'))
   g2 <- get_regression_plot_only(val_align = 1.5, var_align='total_deaths_per_1M',
-                                 var_outcome='total_deaths_per_1M',days_outcome=15) +
-    ggtitle('DPM diff at day 15, aligned by 1.5 DPM')
+                                 var_outcome='total_deaths_per_1M',days_outcome=days) +
+    ggtitle(paste0('DPM diff at day ', days, ', aligned by 1.5 DPM'))
   g3 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
-                                 var_outcome='total_cases_per_1M',days_outcome=15) +
-    ggtitle('CPM diff at day 15, aligned by 0.5 DPM')
+                                 var_outcome='total_cases_per_1M',days_outcome=days) +
+    ggtitle(paste0('CPM diff at day ', days, ', aligned by 0.5 DPM'))
   g4 <- get_regression_plot_only(val_align = 1.5, var_align='total_deaths_per_1M',
-                                 var_outcome='total_cases_per_1M',days_outcome=15) +
-    ggtitle('CPM diff at day 15, aligned by 1.5 DPM')
+                                 var_outcome='total_cases_per_1M',days_outcome=days) +
+    ggtitle(paste0('CPM diff at day ', days, ', aligned by 1.5 DPM'))
   ggarrange(g1, g2, g3, g4,
             ncol = 2, nrow = 2, labels = letters[1:4])
-  ggsave('../Covid_19_Research/Fig2.eps', width = 9, height = 9)
+  #ggsave('../Covid_19_Research/Fig2.eps', width = 9, height = 9)
+  ggsave('../Covid_19_Research/Fig2.pdf', width = 9, height = 9)
 }
 
 fig4 <- function() {

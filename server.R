@@ -141,7 +141,7 @@ function(input, output, session) {
                    format(Sys.Date(), '%Y_%m_%d'), '.pdf'),
         content = function(file) {
             ggsave(file, plot = outcome_plot(countriesBCG(), input$var2plot), 
-                   device = "pdf", width = 7, height = 7)
+                   device = "pdf", width = 7, height = 20)
         }
     )
     
