@@ -305,7 +305,7 @@ regress <- function(contriesBCG, var) {
 }
 
 outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
-                         return_fig5=FALSE) {
+                         return_figure=0) {
   #comp <- expand.grid(levels(x$TBcases5Groups), levels(x$TBcases5Groups))
   comp_list <- function(n) {
     l <- 1:n
@@ -445,39 +445,47 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   
   # MCV vaccine
   MCV <- ggboxplot(x, x = "MCV_group", y = var, color = "MCV_group", add = c("jitter"), palette = "jco") + 
-    stat_compare_means(label.y = min(x[,var])) + 
-    stat_compare_means(comparisons = comp_list(nlevels(x$MCV_group)),
-                       label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+    stat_compare_means() +
+    #stat_compare_means(comparisons = comp_list(nlevels(x$MCV_group)),
+    #                   label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
     theme(legend.position = "none") +
+    ylab(ytitle) + 
     expand_limits(y=max(x[,var])*1.2) 
                    
     # RCV vaccine
   RCV <- ggboxplot(x, x = "RCV_group", y = var, color = "RCV_group", add = c("jitter"), palette = "jco") + 
-    stat_compare_means(label.y = min(x[,var])) + 
-    stat_compare_means(comparisons = comp_list(nlevels(x$RCV_group)),
-                       label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+    stat_compare_means() + 
+    # stat_compare_means(comparisons = comp_list(nlevels(x$RCV_group)),
+    #                    label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
     theme(legend.position = "none") +
+    ylab(ytitle) + 
     expand_limits(y=max(x[,var])*1.2) 
                    
      # 15 y vaccine
   g15 <- ggboxplot(x, x = "vaccinated_15_y", y = var, color = "vaccinated_15_y", add = c("jitter"), palette = "jco") + 
-    stat_compare_means(label.y = min(x[,var])) + 
-    stat_compare_means(comparisons = comp_list(nlevels(x$vaccinated_15_y)),
-                       label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+    stat_compare_means() + 
+    # stat_compare_means(comparisons = comp_list(nlevels(x$vaccinated_15_y)),
+    #                    label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
     theme(legend.position = "none") +
+    ylab(ytitle) +
     expand_limits(y=max(x[,var])*1.2)                 
   
-  # To add Danielle's figure separetly:
-  figure <- ggarrange(gscatter_under_25, gscatter_25_to_64, gscatter_over_65,g15,
-                      ncol = 2, nrow = 2, labels = letters[1:3])
-  if (return_fig5) {
+  if (return_figure == 5) {
+    # To add Danielle's figure separetly:
+    figure <- ggarrange(gscatter_under_25, gscatter_25_to_64, 
+                        gscatter_over_65,
+                        ncol = 3, nrow = 1, labels = letters[1:3])
     Dani_figure <- annotate_figure(figure,
                                    top = text_grob("Relative BCG coverage by age groups, acording to population share", 
                                                    color = "black", face = "bold", size = 14))      
     
     return(Dani_figure)
   }
-  
+  if (return_figure == 7) {
+    figure <- ggarrange(g15,RCV, MCV,
+                        ncol = 3, nrow = 1, labels = letters[1:3])
+    return(figure)
+  }
   ###### BACK TO NADAV'S CODE
   
   ggarrange(gscatter, gscatterTB,gscatter_under_25, 
@@ -761,10 +769,30 @@ fig5 <- function() {
   
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
-               return_fig5=TRUE)
+               return_figure = 5)
   ggsave('../Covid_19_Research/Fig5.eps', width=9, height = 9)
   ggsave(paste0('../Covid_19_Research/Fig5_', days_outcome, '.pdf'), width=9, height = 9)
 }
+
+fig7 <- function() {
+  #countries <- get_Danielle_data()
+  covid <- get_worldometers_data(as.Date('2020-05-05'))
+  var_align <- 'total_deaths_per_1M'
+  val_align <- DEFAULT_MIN_VAL
+  covid <- align_by_var_and_val(covid, var=var_align, val_align)
+  
+  outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
+  covid <- covid[!is.na(covid[,outcome]), ]
+  covid <- droplevels(covid)
+  days_outcome <- 20
+  
+  x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
+  outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
+               return_figure = 7)
+  #ggsave('../Covid_19_Research/Fig7.eps', width=9, height = 9)
+  ggsave(paste0('../Covid_19_Research/Fig7_', days_outcome, '.pdf'), width=9, height = 3.5)
+}
+
 
 permute_test <- function() {
   set.seed(12345)
