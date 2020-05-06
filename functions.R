@@ -443,13 +443,29 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
                                   conf.int = TRUE 
   ) + stat_cor(method = "pearson", label.x.npc = "center") 
   
-  # 15 y vaccine
+  # MCV vaccine
+  MCV <- ggboxplot(x, x = "MCV_group", y = var, color = "MCV_group", add = c("jitter"), palette = "jco") + 
+    stat_compare_means(label.y = min(x[,var])) + 
+    stat_compare_means(comparisons = comp_list(nlevels(x$MCV_group)),
+                       label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+    theme(legend.position = "none") +
+    expand_limits(y=max(x[,var])*1.2) 
+                   
+    # RCV vaccine
+  RCV <- ggboxplot(x, x = "RCV_group", y = var, color = "RCV_group", add = c("jitter"), palette = "jco") + 
+    stat_compare_means(label.y = min(x[,var])) + 
+    stat_compare_means(comparisons = comp_list(nlevels(x$RCV_group)),
+                       label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+    theme(legend.position = "none") +
+    expand_limits(y=max(x[,var])*1.2) 
+                   
+     # 15 y vaccine
   g15 <- ggboxplot(x, x = "vaccinated_15_y", y = var, color = "vaccinated_15_y", add = c("jitter"), palette = "jco") + 
     stat_compare_means(label.y = min(x[,var])) + 
     stat_compare_means(comparisons = comp_list(nlevels(x$vaccinated_15_y)),
                        label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
     theme(legend.position = "none") +
-    expand_limits(y=max(x[,var])*1.2)                
+    expand_limits(y=max(x[,var])*1.2)                 
   
   # To add Danielle's figure separetly:
   figure <- ggarrange(gscatter_under_25, gscatter_25_to_64, gscatter_over_65,g15,
@@ -467,8 +483,9 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   ggarrange(gscatter, gscatterTB,gscatter_under_25, 
             gscatter_25_to_64, gscatter_over_65,gscatterHIV,
             gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share, gscatter_median_down, gscatter_median_up, g15,
-            labels = letters[1:12],
-            ncol = 2, nrow = 6)
+            MCV, RCV,
+            labels = letters[1:14],
+            ncol = 2, nrow = 7)
 }
 
 get_ecdc_data <- function() {
