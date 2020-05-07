@@ -462,7 +462,10 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
     expand_limits(y=max(x[,var])*1.2) 
                    
      # 15 y vaccine
-  g15 <- ggboxplot(x, x = "vaccinated_15_y", y = var, color = "vaccinated_15_y", add = c("jitter"), palette = "jco") + 
+  # Concider using cuzik test:
+  # PMCMRplus::cuzickTest(x[,var], x$vaccinated_15_y)
+  g15 <- ggboxplot(x, x = "vaccinated_15_y", y = var, color = "vaccinated_15_y",
+                   add = c("jitter"), palette = "lancet") + 
     stat_compare_means() + 
     # stat_compare_means(comparisons = comp_list(nlevels(x$vaccinated_15_y)),
     #                    label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
