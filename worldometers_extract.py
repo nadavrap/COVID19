@@ -1,7 +1,7 @@
 
 import datetime
 import urllib
-import bs4 as bs
+from bs4 import BeautifulSoup
 import pandas as pd
 from urllib import request
 import time
@@ -64,7 +64,7 @@ def get_site_html(url):
     except Exception as e:
         print(e.__str__())
         return False
-    return bs.BeautifulSoup(url_string, "html.parser")
+    return BeautifulSoup(url_string, "html.parser")
 
 # def get_table(web) -> pd.DataFrame:
 def get_table(web):

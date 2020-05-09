@@ -161,6 +161,8 @@ get_Danielle_data <- function(remove_old_cohort_flag=TRUE) {
   d$TBcases5Groups <- factor(d$TBcases5Groups, 
                              labels = c('<10', '11-20', '21-50', '50-100', '100-200'),
                              ordered = TRUE)
+  d$RCV_group <- factor(d$RCV_group, labels = c('Bellow median', 'Above median'))
+  d$MCV_group <- factor(d$MCV_group, labels = c('Bellow median', 'Above median'))
   d$TB_high <- d$TBcases5Groups != '<10'
   # names(d)[names(d) == "Two BCG groups"] <- 'BCG2Groups'
   # d$BCG2Groups <- factor(d$BCG2Groups, 
@@ -467,8 +469,8 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   g15 <- ggboxplot(x, x = "vaccinated_15_y", y = var, color = "vaccinated_15_y",
                    add = c("jitter"), palette = "lancet") + 
     stat_compare_means() + 
-    # stat_compare_means(comparisons = comp_list(nlevels(x$vaccinated_15_y)),
-    #                    label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
+    stat_compare_means(comparisons = comp_list(nlevels(x$vaccinated_15_y)),
+                      label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
     theme(legend.position = "none") +
     ylab(ytitle) +
     expand_limits(y=max(x[,var])*1.2)                 
@@ -735,8 +737,8 @@ fig2 <- function() {
     ggtitle(paste0('CPM diff at day ', days, ', aligned by 1.5 DPM'))
   ggarrange(g1, g2, g3, g4,
             ncol = 2, nrow = 2, labels = letters[1:4])
-  #ggsave('../Covid_19_Research/Fig2.eps', width = 9, height = 9)
-  ggsave('../Covid_19_Research/Fig2.pdf', width = 9, height = 9)
+  #ggsave('./Figures/Fig2.eps', width = 9, height = 9)
+  ggsave('./Figures/Fig2.pdf', width = 9, height = 9)
 }
 
 fig4 <- function() {
@@ -773,8 +775,8 @@ fig5 <- function() {
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
                return_figure = 5)
-  ggsave('../Covid_19_Research/Fig5.eps', width=9, height = 9)
-  ggsave(paste0('../Covid_19_Research/Fig5_', days_outcome, '.pdf'), width=9, height = 9)
+  ggsave('./Figures/Fig5.eps', width=9, height = 9)
+  ggsave(paste0('./Figures/Fig5_', days_outcome, '.pdf'), width=9, height = 9)
 }
 
 fig7 <- function() {
@@ -792,8 +794,8 @@ fig7 <- function() {
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
                return_figure = 7)
-  #ggsave('../Covid_19_Research/Fig7.eps', width=9, height = 9)
-  ggsave(paste0('../Covid_19_Research/Fig7_', days_outcome, '.pdf'), width=9, height = 3.5)
+  #ggsave('./Figures/Fig7.eps', width=9, height = 9)
+  ggsave(paste0('./Figures/Fig7_', days_outcome, '.pdf'), width=9, height = 3.5)
 }
 
 

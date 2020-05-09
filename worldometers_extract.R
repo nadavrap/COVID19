@@ -15,18 +15,27 @@ get_worlodmeters_raw_data <- function() {
     return(readRDS(fname))
   }
   
-  virtualenv_create(envname = 'python3_env', 
-                    python = 'python3')#/usr/bin/
-  virtualenv_install('python3_env',
-                     packages = c('datetime', 'bs4', 'pandas', 'BeautifulSoup4'))
-  use_virtualenv("python3_env", required = TRUE)
+  # ------------------ App virtualenv setup  ------------------- #
+  # As seen here: https://github.com/ranikay/shiny-reticulate-app
+  # Tied to .Rprofile
+  
+  virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+  python_path = Sys.getenv('PYTHON_PATH')
+  
+  PYTHON_DEPENDENCIES <- c('datetime', 'pandas', 'beautifulsoup4')
+  # Create virtual env and install dependencies
+  reticulate::virtualenv_create(envname = virtualenv_dir, python = python_path)
+  reticulate::virtualenv_install(virtualenv_dir, packages = PYTHON_DEPENDENCIES)
+  reticulate::use_virtualenv(virtualenv_dir, required = T)
+  # ------------------ End virtualenv setup  ------------------- #
   
   tryCatch({
     #source_python("./worldometers_extract.py")
     py_run_file("./worldometers_extract.py")
     }, error = function(e) {
       warning(paste('Could not run worldometes_extract.py,',
-      'returning latest version from', readLines(cache_fname_date)))
+                    e,
+      'Returning latest version from', readLines(cache_fname_date)))
       return(readRDS(fname))
     })
 
