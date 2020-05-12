@@ -7,6 +7,8 @@ library(rpart) # for decision tree
 library(rpart.plot)
 library(rattle) # for fancyRpartPlot function
 
+source('./functions.R')
+
 function(input, output, session) {
     
     dataset <- reactive({
