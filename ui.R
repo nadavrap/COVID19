@@ -88,10 +88,25 @@ shinyUI(navbarPage("COVID19",
                     sliderInput('maxDaysOutcome', 'Outcome at day', min=1, 
                                 max=max(worldometer$Days),
                                 value=15, step=1, round=TRUE),
-                    selectInput("selected_countries", "Select countries",
+                    
+                    sliderInput("country_size", 
+                                label = 'Limit countries by population (in millions)', 
+                                min = 0, 
+                                max = ceiling(max(worldometer$`population size (M)`, na.rm = TRUE)),
+                                value = c(0, ceiling(max(worldometer$`population size (M)`, na.rm = TRUE))),
+                                step=1, round=0),
+                    
+                    # sliderInput('country_size', 
+                    #             'Limit countries by population (in millions)', 
+                    #             min=0, 
+                    #             max=ceiling(max(worldometer$`population size (M)`, na.rm = TRUE)),
+                    #             value=ceiling(max(worldometer$`population size (M)`, na.rm = TRUE)),
+                    #             step=1, round=0),
+                    selectInput("selected_countries", "Selected countries",
                                 choices = unique(worldometer$Country),
                                 selected = unique(worldometer$Country),
-                                multiple = TRUE
+                                multiple = TRUE,
+                                selectize = FALSE # Disable user changes
                     ),
                 ),
                 

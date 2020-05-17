@@ -218,6 +218,11 @@ get_worldometers_data <- function(end_date) {
   covid$Country <- gsub(' $', '', covid$Country)
   covid$Country[covid$Country == 'BosniaandHerzegovina'] <- "Bosnia And Herzegovina"
   covid$Country[covid$Country == 'DominicanRepublic'] <- "Dominican Republic"
+  covid$Country[covid$Country == 'Macau'] <- "Macao"
+  covid$Country[covid$Country %in% c("U.S.", 'USA*', 'UnitedStates')] <- "USA"
+  covid$Country[covid$Country == 'UnitedKingdom'] <- "UK"
+  
+  
   if (names(covid)[1]=='') {
     covid[,1] <- NULL
   }
@@ -516,7 +521,7 @@ get_stats <- function(covid, outcome, days,
   
   x <- x[,c(depended_var, outcome)]
   x <- x[complete.cases(x),]
-  if(nrow(x) < 2) {
+  if(nrow(x) < 3) {
     cor_res <- list(estimate=NA, p.value=NA)
     permute_pvalP <- permute_pvalS <- NA
   } else {
@@ -550,14 +555,16 @@ get_stats_table_outcome <- function(covid, outcome,
 get_stats_table <- function(var_align, val_align,
                             depended_var="BCG administration years",
                             end_date, selected_countries=NULL,
-                            get_data_only=FALSE) {
+                            get_data_only=FALSE, country_size_range=c(0,1e6)) {
   
   covid <- get_worldometers_data(end_date)
+  
   if (!is.null(selected_countries)) {
     covid <- droplevels(covid[covid$Country %in% selected_countries,])
   }
+  covid <- covid[covid$`population size (M)` >= country_size_range[1] &
+                   covid$`population size (M)` <= country_size_range[2], ]
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
-  
   
   outcomes <- c('total_deaths_per_1M', 'critical_per_1M', 'total_recovered_per_1M',
                 'total_cases_per_1M')

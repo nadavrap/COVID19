@@ -26,18 +26,22 @@ function(input, output, session) {
         covid <- get_worldometers_data(input$end_date)
         covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
         covid <- covid[!is.na(covid[,input$var2plot]), ]
-        covid <- covid[covid$Country %in% input$selected_countries,]
+        covid <- covid[covid$`population size (M)` >= input$country_size[1] &
+                           covid$`population size (M)` <= input$country_size[2], ]
+        #covid <- covid[covid$Country %in% input$selected_countries,]
         droplevels(covid)
     })
     
     countriesBCG <- reactive({
-        covid <- get_worldometers_data(input$end_date)
-        covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
-        covid <- covid[!is.na(covid[,input$var2plot]), ]
-        covid <- droplevels(covid[covid$Country %in% input$selected_countries,])
-        covid <- droplevels(covid)
-        
-        x <- aggregate_and_merge_countries(covid, input$var2plot, input$maxDaysOutcome)
+        # covid <- get_worldometers_data(input$end_date)
+        # covid <- align_by_var_and_val(covid, var=input$alignby, value=input$alignvalue)
+        # covid <- covid[!is.na(covid[,input$var2plot]), ]
+        # covid <- droplevels(covid[covid$Country %in% input$selected_countries,])
+        # covid <- covid[covid$`population size (M)` >= input$country_size[1] &
+        #                    covid$`population size (M)` <= input$country_size[2], ]
+        # covid <- droplevels(covid)
+        # 
+        x <- aggregate_and_merge_countries(worldo(), input$var2plot, input$maxDaysOutcome)
         x
     })
     
@@ -122,8 +126,11 @@ function(input, output, session) {
     
     output$corPlot <- renderPlot({
         get_stats_table(input$alignby, input$alignvalue, 
-                        depended_var=input$depended_var, input$end_date,
-                        input$selected_countries)
+                        depended_var=input$depended_var, 
+                        input$end_date, 
+                        selected_countries=input$selected_countries,
+                        get_data_only=FALSE,
+                        country_size_range=input$country_size)
     })
     
     output$decisionTree <- renderPlot({
@@ -152,7 +159,11 @@ function(input, output, session) {
                           format(Sys.Date(), '%Y_%m_%d'), '.pdf'),
         content = function(file) {
             ggsave(file, plot=get_stats_table(input$alignby, input$alignvalue, 
-                                              depended_var=input$depended_var, input$end_date),
+                                              depended_var=input$depended_var, 
+                                              input$end_date, 
+                                              selected_countries=input$selected_countries,
+                                              get_data_only=FALSE,
+                                              country_size_range=input$country_size),
                    device='pdf', width = 12, height = 7)
         }
     )
@@ -165,8 +176,9 @@ function(input, output, session) {
             write.csv(get_stats_table(input$alignby, input$alignvalue,
                                       depended_var=input$depended_var,
                                       input$end_date,
-                                      input$selected_countries,
-                                      get_data=TRUE),
+                                      selected_countries=input$selected_countries,
+                                      get_data_only=TRUE,
+                                      country_size_range=input$country_size),
                       file, row.names = TRUE)
         }
     )
@@ -209,6 +221,16 @@ function(input, output, session) {
         updateSliderInput(session, "alignvalue", #value = yval,
                           min = 0, max = max_val, step = step)
     })
+    
+    observe({
+        c_range <- input$country_size
+        countries_list <- unique(worldo()[worldo()$`population size (M)` >= c_range[1] &
+                                              worldo()$`population size (M)` <= c_range[2], 'Country'])
+        updateSelectInput(session, "selected_countries",
+                          choices = unique(get_Danielle_data()$Country),
+                          selected = countries_list)
+    })
+    
     # observe({
     #     country_list <- input$alignby
     #     val <- input$alignvalue
