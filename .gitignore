@@ -9,4 +9,4 @@ Untitled.ipynb
 .DS_Store
 *BAK*
 Figures
-data/worldometer/*
+data/worldometer/*.csv
