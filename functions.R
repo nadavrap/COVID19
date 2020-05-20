@@ -549,7 +549,7 @@ get_stats_table_outcome <- function(covid, outcome,
                                     depended_var="BCG administration years",
                                     premute_test=FALSE) {
   d <- as.data.frame(
-    do.call(rbind, lapply(seq(10, 40, 10),
+    do.call(rbind, lapply(seq(10, 50, 10),
                                      function(days)
                                        get_stats(covid, outcome, days, 
                                                  depended_var,
