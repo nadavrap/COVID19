@@ -101,7 +101,7 @@ if __name__ == '__main__':
     # Go over all dates since Feb 22nd until today
     for d in pd.date_range(start="2020-01-29",end=datetime.datetime.today()):
       i = d.strftime("%m%d")
-      fname = 'data/worldodmeter/' + i + ".csv"
+      fname = 'data/worldometer/' + i + ".csv"
       if not os.path.isfile(fname):
         print(i)
         url = "https://web.archive.org/web/2020%s/https://www.worldometers.info/coronavirus/" % i

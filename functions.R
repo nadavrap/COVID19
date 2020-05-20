@@ -106,13 +106,18 @@ set_key_event_as_min_death <- function(df, min_death=10) {
 }
 
 get_covid_data <- function(min_death=10, from_cache=TRUE) {
-  fname <- paste0('./data/cache_covid_data_',
-                  'min_death_', min_death, '_',
-                  format(Sys.time(), "%Y_%m_%d"), '.rds')
-  if(from_cache & file.exists(fname))
-    return(readRDS(fname))
+  cache_fname <- paste0('./data/cache_covid_data_latest_download_',
+                        'min_death_', min_death, '.rds')
+  cache_fname_date <- paste0('./data/cache_covid_data_',
+                             min_death, '.txt')
+  if(file.exists(cache_fname) && file.exists(cache_fname_date) &&
+     readLines(cache_fname_date) == as.character(Sys.Date())){
+    return(readRDS(cache_fname))
+  }
+  
   d <- set_key_event_as_min_death(merge_data(), min_death)
-  saveRDS(d, fname)
+  saveRDS(d, cache_fname)
+  writeLines(as.character(Sys.Date()), cache_fname_date)
   d
 }
 
@@ -275,13 +280,14 @@ aggregate_and_merge_countries <- function(worldometer, var, days) {
   x
 }
 
-regress <- function(contriesBCG, var) {
+regress <- function(countriesBCG, var) {
   #x <- aggregate_and_merge_countries(worldometer, var, days)
   # Remove columns if single levels appears
-  x <- contriesBCG[,sapply(contriesBCG, nlevels) != 1]
+  x <- countriesBCG[,sapply(countriesBCG, nlevels) != 1]
   #vars <- names(x)
   #names(x)[1:22] <- letters[1:22]
   #res <- lm(as.formula(paste(var, '~.')), x)
+  #x$Country <- x$Date <- x$Date_1st_sick_perM <- NULL
   cols_with_na <- sapply(x, anyNA)
   suppressWarnings({
     tmp <- tryCatch(
@@ -667,6 +673,8 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
     x$`BCG administration years` <- NULL
   }
   
+  x$Open_sc <- x$Localized_sc <- x$National_sc <- x$Localized_so <- NULL
+  warning(paste(colnames(x)))
   # Handwash has many missings
   x$handwash. <- NULL
   x <- droplevels(x[complete.cases(x),])

@@ -75,9 +75,13 @@ function(input, output, session) {
         
     }, height=700)
     
-    output$plotRegression <- renderPlot({
-        #warning(input$maxDaysOutcome)
-        #warning(paste('Rows:', nrow(countriesBCG())))
+    output$plotRegressions <- renderPlot({
+        outcome_plot(countriesBCG(), input$var2plot)
+        #grid.arrange(g1, g2, ncol=1, rel_heights = c(1/10, 9/10))
+        #cowplot::plot_grid(g1, g2, ncol=1, rel_heights = c(1/4, 3/4))
+        #cowplot::plot_grid(g1, g2, align = "v", nrow = 2, rel_heights = c(2/3, 1/3))
+    })
+    output$univarOut <- renderPlot({
         cors <- regress(countriesBCG(), input$var2plot)
         #warning(nrow(cor))
         if(is.null(cors)) {
@@ -89,7 +93,6 @@ function(input, output, session) {
                 theme(panel.grid.major=element_blank(),
                       panel.grid.minor=element_blank())
         } else {
-        #warning(dim(cors))
             cors$`-Log10Pval` <- -log10(cors$Pval)
             cors$`-Log10Pval`[cors$Pval > 0.05] <- NA
             cors$Pval <- ifelse(cors$Pval > 0.05, NA, formatC(cors$Pval, format = "e", digits = 2))
@@ -97,22 +100,21 @@ function(input, output, session) {
             #cors$Pval[is.na(cors$Pval)] <- ''
             
             # Order bars according to Cor
-            g1 <- ggplot(cors, aes(x = reorder(Var, Cor), Cor, fill=`-Log10Pval`)) + geom_bar(stat="identity") +
+            ggplot(cors, aes(x = reorder(Var, Cor), Cor, fill=`-Log10Pval`)) + geom_bar(stat="identity") +
                 ylim(-1,1) +
                 xlab('') +
                 ggtitle(paste('Correlation of different variables with',input$var2plot)) +
                 # Rotate x labels
-                theme(axis.text.x = element_text(face = "bold", color = "#993333", 
-                                                   size = 12, angle = 45, hjust = 1)) +
-                geom_text(aes(label=Pval), position=position_dodge(width=0.9), vjust=-1)
+                #theme(axis.text.x = element_text(face = "bold", color = "#993333", 
+                #                                 size = 12, angle = 45, hjust = 1)) +
+                theme(axis.text.y = element_text(face = "bold", color = "#993333")) + 
+                #geom_text(aes(label=Pval), position=position_dodge(width=0.9), vjust=-1) + 
+                geom_text(aes(label=Pval)) + 
+                coord_flip()
         }
         
-        g2 <- outcome_plot(countriesBCG(), input$var2plot)
-        #grid.arrange(g1, g2, ncol=1, rel_heights = c(1/10, 9/10))
-        cowplot::plot_grid(g1, g2, ncol=1, rel_heights = c(1/4, 3/4))
-        #cowplot::plot_grid(g1, g2, align = "v", nrow = 2, rel_heights = c(2/3, 1/3))
     })
-    
+        
     output$regression_output <- renderText({ 
         paste('Data is aligned according to first day the contry had at least',
               input$alignvalue, 'cases of', input$alignby, '.\n',
@@ -138,6 +140,7 @@ function(input, output, session) {
     })
     
     output$multivarOut <- renderPlot({
+        warning(nrow(countriesBCG()))
         multi_var(countriesBCG(), input$var2plot, depended_var=input$depended_var,
                   remove_BCG=FALSE, remove_ps=TRUE, #remove_ps=input$removePS
                   )

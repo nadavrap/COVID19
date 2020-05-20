@@ -46,7 +46,7 @@ get_worlodmeters_raw_data <- function() {
   #                   "Croatia","Brazil","Poland","Peru","Bulgaria","Lebanon")
   
   # read into a df the files from world meter
-  file_names <- dir("./data/worldodmeter", full.names=TRUE)
+  file_names <- dir("./data/worldometer", full.names=TRUE)
   all_dates_df <- do.call(rbind, lapply(file_names, read.csv, stringsAsFactors = FALSE)) 
   all_dates_df <- as.data.frame(apply(all_dates_df, 2, function(x)gsub('\\s+', '', x))) %>%
     dplyr::select(-c(1)) #%>%
