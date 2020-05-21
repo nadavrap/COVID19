@@ -184,9 +184,16 @@ get_Danielle_data <- function(remove_old_cohort_flag=TRUE) {
                              labels = c('high income', 'Upper middle income',
                                         'lower middle income'),
                           ordered = TRUE)
+  
+  for (col in c("Localized_sc", "National_sc", "Localized_so", "Open_sc")) {
+    d[,col] <- as.Date(d[,col], format='%d/%m/%y')
+  }
+  
+  
   # date of 1 sick per 1M
   # "Feb 22"  -> date
   d$Date_1st_sick_perM <- as.Date(d$`date of 1 sick per 1M`, format='%b %d')
+  
   d$`date of 1 sick per 1M` <- NULL
   
   saveRDS(d, cache_fname)
@@ -236,6 +243,7 @@ get_worldometers_data <- function(end_date) {
   # First, integer to character, and then add space on second character
   covid$Date <- gsub('^([0-9]{1})([0-9]{2})$', '\\1 \\2', as.character(covid$Date))
   covid$Date <- as.Date(covid$Date, format='%m %d')
+  
   covid <- covid[!is.na(covid$Date) & covid$Date <= end_date, ]
   # Many -1s, repalce with NA
   covid[covid==-1] <- NA
@@ -264,14 +272,48 @@ align_by_var_and_val <- function(covid, var, value) {
   droplevels(covid)
 }
 
+days_closed <- function(firstdate, lastdate, closed, reopen) {
+  if(is.na(reopen)) {
+    reopen <- as.Date('2025-01-01')
+  }
+  closed <- as.Date(closed)
+  lastdate <- as.Date(lastdate)
+  reopen <- as.Date(reopen)
+  firstdate <- as.Date(firstdate)
+  if(closed > lastdate || reopen < firstdate) {
+    0
+  } else {
+    left <- max(firstdate, closed)
+    right <- min(lastdate, reopen, na.rm=T)
+    as.numeric(right-left, units='days')
+  }
+}
+
+
+closure_days <- function(x, countries_first_dates, countries_last_dates) {
+  df <- merge(merge(x, countries_first_dates), countries_last_dates)
+  df$Localized_so[is.na(df$Localized_so)] <- df$Open_sc[is.na(df$Localized_so)]
+  df$days_school_closed <- apply(df[,c('FirstDate', 'LastDate', 'National_sc', 'Localized_so')], 
+                                 MARGIN = 1, FUN = function(x) days_closed(x[1], x[2], x[3], x[4]))
+  
+  #head(df[,c('Country', 'FirstDate', 'LastDate', 'National_sc', 'Localized_so', 'days_school_closed')])
+  df$days_school_closed
+}
+
 aggregate_and_merge_countries <- function(worldometer, var, days) {
-  y <- worldometer[worldometer$Days %in% c(0,days), c('Country', var, 'Days')]
+  y <- worldometer[worldometer$Days %in% c(0,days), c('Country', var, 'Days', 'Date')]
   y <- y[!is.na(y[,var]),]
   # Remove those with no two datapoints
   y <- y[y$Country %in% y$Country[duplicated(y$Country)],]
-  y <- aggregate(as.formula(paste(var, '~ Country')), y, function(x) max(x)-min(x))
+  y <- y[order(y$Date),]
+  countries_first_dates <- y[!duplicated(y$Country), c('Country', 'Date')]
+  names(countries_first_dates)[2] <- 'FirstDate'
+  countries_last_dates <- y[duplicated(y$Country), c('Country', 'Date')]
+  names(countries_last_dates)[2] <- 'LastDate'
+  agg <- aggregate(as.formula(paste(var, '~ Country')), y, function(x) max(x)-min(x))
   x <- get_Danielle_data()
-  x <- droplevels(merge(x,y))
+  x <- droplevels(merge(x,agg))
+  x$days_school_closed <- closure_days(x, countries_first_dates, countries_last_dates)
   x$Date_1st_sick_perM <- NULL
   #countries <- x$Country
   x$Country <- NULL
@@ -288,11 +330,19 @@ regress <- function(countriesBCG, var) {
   #names(x)[1:22] <- letters[1:22]
   #res <- lm(as.formula(paste(var, '~.')), x)
   #x$Country <- x$Date <- x$Date_1st_sick_perM <- NULL
-  cols_with_na <- sapply(x, anyNA)
+  x[,c("Localized_sc", "National_sc", "Localized_so", "Open_sc")] <- NULL
+  x$handwash. <- NULL
+  # Make sure outcome variable is last
+  col_idx <- which(names(x) == var)
+  x <- x[, c((1:ncol(x))[-col_idx], col_idx)]
+  
+  #cols_with_na <- sapply(x, anyNA)
+  
   suppressWarnings({
     tmp <- tryCatch(
       {
-        hetcor(x[,!cols_with_na], use = 'pairwise.complete.obs')
+        #hetcor(x[,!cols_with_na], use = 'pairwise.complete.obs')
+        hetcor(x, use = 'pairwise.complete.obs')
       },
       error=function(cond) {
         return(NULL)
@@ -307,13 +357,13 @@ regress <- function(countriesBCG, var) {
                 Cor=tmp$correlations[,ncol(tmp$correlations)], 
                 Pval=tmp$tests[ncol(tmp$tests),])
   cors <- cors[complete.cases(cors),]
-  if (sum(cols_with_na)) {
-    bcgcor <- cor.test(x$`BCG administration years`, x[,var], use = 'pairwise.complete.obs', method = 'pearson')
-    cors <- rbind(cors, 
-                  data.frame(Var='BCG administration years', Cor=bcgcor$estimate, 
-                             Pval=bcgcor$p.value))
-    rownames(cors)[nrow(cors)] <- 'BCG administration years'
-  }
+  # if (sum(cols_with_na)) {
+  #   bcgcor <- cor.test(x$`BCG administration years`, x[,var], use = 'pairwise.complete.obs', method = 'pearson')
+  #   cors <- rbind(cors, 
+  #                 data.frame(Var='BCG administration years', Cor=bcgcor$estimate, 
+  #                            Pval=bcgcor$p.value))
+  #   rownames(cors)[nrow(cors)] <- 'BCG administration years'
+  # }
   droplevels(cors[cors$Var != var,])
 }
 
@@ -861,7 +911,7 @@ main <- function() {
   rm(list=ls())
   source('./functions.R')
   countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-05-05'))
+  covid <- get_worldometers_data(as.Date('2020-05-21'))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
@@ -872,6 +922,6 @@ main <- function() {
   days_outcome <- 20
   
   x <- aggregate_and_merge_countries(covid, var_outcome, days_outcome) 
-  cors <- regress(covid, var_outcome, days_outcome)
+  cors <- regress(x, var_outcome)
   outcome_plot(x, var = var_outcome)
 }
