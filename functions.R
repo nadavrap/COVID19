@@ -155,7 +155,7 @@ get_Danielle_data <- function(remove_old_cohort_flag=TRUE) {
   d$Country[d$Country %in% c('Uk', 'United Kingdom')] <- 'UK'
   d$Country[d$Country %in% c('Usa', 'United States')] <- 'USA'
   #d$Country[d$Country == 'Bosnia And Herzegovina'] <- 'Bosnia and Herzegovina'
-  d$Country[d$Country == 'South Korea'] <- 'S.Korea'
+  d$Country[d$Country %in% c('South Korea', 'S.korea')] <- 'S.Korea'
   d$Country <- as.factor(d$Country)
   rownames(d) <- d$Country
   d$COUNTRY <- NULL
@@ -233,7 +233,8 @@ get_worldometers_data <- function(end_date) {
   covid$Country[covid$Country == 'Macau'] <- "Macao"
   covid$Country[covid$Country %in% c("U.S.", 'USA*', 'UnitedStates')] <- "USA"
   covid$Country[covid$Country == 'UnitedKingdom'] <- "UK"
-  
+  covid$Country[covid$Country %in% c("UnitedArabEmirates", 'UAE', 'United Arab Emirates', 'U.A.E.')] <- "United Arab Emirates"
+  covid$Country[covid$Country %in% c('South Korea', 'S.korea', 'SouthKorea')] <- 'S.Korea'
   
   if (names(covid)[1]=='') {
     covid[,1] <- NULL

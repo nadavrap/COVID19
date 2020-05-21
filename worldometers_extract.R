@@ -69,13 +69,15 @@ get_worlodmeters_raw_data <- function() {
 
   all_dates_df$Country.Other[all_dates_df$Country.Other == 'BosniaandHerzegovina'] <- "Bosnia And Herzegovina"
   all_dates_df$Country.Other[all_dates_df$Country.Other == 'DominicanRepublic'] <- "Dominican Republic"
-  all_dates_df$Country.Other[all_dates_df$Country.Other == "U.K."] <- "UK"
-  all_dates_df$Country.Other[all_dates_df$Country.Other == 'DominicanRepublic'] <- "Dominican Republic"
+  all_dates_df$Country.Other[all_dates_df$Country.Other == 'SouthKorea'] <- "S.Korea"
+  all_dates_df$Country.Other[all_dates_df$Country.Other %in% c("U.K.", 'UnitedKingdom')] <- "UK"
+  all_dates_df$Country.Other[all_dates_df$Country.Other %in% c("U.A.E.", "UAE", 'UnitedArabEmirates')] <- "United Arab Emirates"
+  all_dates_df$Country.Other[all_dates_df$Country.Other %in% c("U.S.", "UnitedStates", 'USA*')] <- "USA"
   
   info_df$Country[info_df$Country == 'Czech'] <- "Czechia"
   info_df$Country[info_df$Country == 'Uk'] <- "UK"
   info_df$Country[info_df$Country %in% c('Usa', 'United States')] <- "USA"
-  info_df$Country[info_df$Country == 'South Korea'] <- "S.Korea"
+  info_df$Country[info_df$Country %in% c('South Korea', "S.korea")] <- "S.Korea"
   
   
   all_dates_merge <- merge(all_dates_df, info_df, by.x="Country.Other", by.y='Country', all=T)
