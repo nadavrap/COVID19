@@ -4,8 +4,6 @@ library(ggplot2)
 
 source('./functions.R')
 
-DEFAULT_DATE <- "2020-05-21"
-
 theme_set(theme_bw())
 
 #d <- get_raw_data()
@@ -89,7 +87,7 @@ shinyUI(navbarPage("COVID19",
                     #checkboxInput('ps25only', 'Remove ps25 and ps65', value = FALSE),
                     sliderInput('maxDaysOutcome', 'Outcome at day', min=1, 
                                 max=max(worldometer$Days),
-                                value=15, step=1, round=TRUE),
+                                value=20, step=1, round=TRUE),
                     
                     sliderInput("country_size", 
                                 label = 'Limit countries by population (in millions)', 

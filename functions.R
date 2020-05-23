@@ -14,7 +14,7 @@ source('worldometers_extract.R')
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
 
 DEFAULT_MIN_VAL <- .5
-
+DEFAULT_DATE <- "2020-05-21"
 
 get_raw_data <- function() {
   # library(googlesheets)
@@ -725,6 +725,9 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   }
   
   x$Open_sc <- x$Localized_sc <- x$National_sc <- x$Localized_so <- NULL
+  # Remove percent BCG by age group
+  x[,c("percent_BCG_under_25", "percent_BCG_25_to_64", "percent_BCG_over_65")] <- NULL
+  
   warning(paste(colnames(x)))
   # Handwash has many missings
   x$handwash. <- NULL
@@ -779,7 +782,7 @@ get_regression_plot_only <- function(val_align=.5,
                                      var_outcome='total_deaths_per_1M', #'critical_per_1M'#
                                      days_outcome=15) {
   #countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-05-05'))
+  covid <- get_worldometers_data(as.Date(DEFAULT_DATE))
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   covid <- covid[!is.na(covid[,var_outcome]), ]
   covid <- droplevels(covid)
@@ -792,24 +795,25 @@ fig2 <- function() {
   g1 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
                                  var_outcome='total_deaths_per_1M',days_outcome=days) +
     ggtitle(paste0('DPM diff at day ', days, ', aligned by 0.5 DPM'))
-  g2 <- get_regression_plot_only(val_align = 1.5, var_align='total_deaths_per_1M',
+  g2 <- get_regression_plot_only(val_align = 2, var_align='total_deaths_per_1M',
                                  var_outcome='total_deaths_per_1M',days_outcome=days) +
-    ggtitle(paste0('DPM diff at day ', days, ', aligned by 1.5 DPM'))
+    ggtitle(paste0('DPM diff at day ', days, ', aligned by 2 DPM'))
   g3 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
                                  var_outcome='total_cases_per_1M',days_outcome=days) +
     ggtitle(paste0('CPM diff at day ', days, ', aligned by 0.5 DPM'))
-  g4 <- get_regression_plot_only(val_align = 1.5, var_align='total_deaths_per_1M',
+  g4 <- get_regression_plot_only(val_align = 2, var_align='total_deaths_per_1M',
                                  var_outcome='total_cases_per_1M',days_outcome=days) +
-    ggtitle(paste0('CPM diff at day ', days, ', aligned by 1.5 DPM'))
+    ggtitle(paste0('CPM diff at day ', days, ', aligned by 2 DPM'))
   ggarrange(g1, g2, g3, g4,
-            ncol = 2, nrow = 2, labels = letters[1:4])
+            ncol = 2, nrow = 2, labels = letters[1:4]) + 
+    theme(rect = element_rect(fill = "transparent")) # all rectangles
   #ggsave('./Figures/Fig2.eps', width = 9, height = 9)
-  ggsave('./Figures/Fig2.pdf', width = 9, height = 9)
+  ggsave('./Figures/Fig2.pdf', width = 9, height = 9,  bg = "transparent")
 }
 
 fig4 <- function() {
   #countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-05-05'))
+  covid <- get_worldometers_data(as.Date(DEFAULT_DATE))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
@@ -817,51 +821,51 @@ fig4 <- function() {
   outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
   covid <- covid[!is.na(covid[,outcome]), ]
   covid <- droplevels(covid)
-  days_outcome <- 15
+  days_outcome <- 20
   
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   multi_var(x, outcome=outcome,
             depended_var="BCG administration years",
             remove_BCG=FALSE, remove_ps=TRUE, get_data_only=FALSE,
             ps25only=FALSE)
+  ggsave('./Figures/Fig4.pdf', width = 9, height = 7, bg='transparent')
 }
 
 fig5 <- function() {
-  #countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-05-05'))
-  var_align <- 'total_deaths_per_1M'
+  days_outcome <- 20
   val_align <- DEFAULT_MIN_VAL
+  covid <- get_worldometers_data(as.Date(DEFAULT_DATE))
+  var_align <- 'total_deaths_per_1M'
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
   outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
   covid <- covid[!is.na(covid[,outcome]), ]
   covid <- droplevels(covid)
-  days_outcome <- 20
   
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
                return_figure = 5)
-  ggsave('./Figures/Fig5.eps', width=9, height = 9)
-  ggsave(paste0('./Figures/Fig5_', days_outcome, '.pdf'), width=9, height = 9)
+  #ggsave('./Figures/Fig5.eps', width=9, height = 9)
+  ggsave('./Figures/Fig5.pdf', width=12, height = 4)
 }
 
 fig7 <- function() {
-  #countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-05-05'))
-  var_align <- 'total_deaths_per_1M'
+  days_outcome <- 20
   val_align <- DEFAULT_MIN_VAL
+  
+  covid <- get_worldometers_data(as.Date(DEFAULT_DATE))
+  var_align <- 'total_deaths_per_1M'
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
   
   outcome <- 'total_deaths_per_1M' #'critical_per_1M'#
   covid <- covid[!is.na(covid[,outcome]), ]
   covid <- droplevels(covid)
-  days_outcome <- 20
   
   x <- aggregate_and_merge_countries(covid, outcome, days_outcome) 
   outcome_plot(x, var=outcome, bcg_years_plot_only=FALSE,
                return_figure = 7)
   #ggsave('./Figures/Fig7.eps', width=9, height = 9)
-  ggsave(paste0('./Figures/Fig7_', days_outcome, '.pdf'), width=9, height = 3.5)
+  ggsave('./Figures/Fig7.pdf', width=9, height = 3.5)
 }
 
 
@@ -912,7 +916,7 @@ main <- function() {
   rm(list=ls())
   source('./functions.R')
   countries <- get_Danielle_data()
-  covid <- get_worldometers_data(as.Date('2020-05-21'))
+  covid <- get_worldometers_data(as.Date(DEFAULT_DATE))
   var_align <- 'total_deaths_per_1M'
   val_align <- DEFAULT_MIN_VAL
   covid <- align_by_var_and_val(covid, var=var_align, val_align)
