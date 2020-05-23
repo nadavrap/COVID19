@@ -482,7 +482,33 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
                                 add.params = list(color = "blue", fill = "lightgray"),
                                 conf.int = TRUE # Add confidence interval
   ) + stat_cor(method = "pearson", label.x.npc = "center")
-                   
+
+  # age group: 0-24
+  
+  bcg_under_25 <- ggscatter(data=x, x = "percent_BCG_under_25", y = var,
+                            xlab = "BCG coverage, below 24 years",                               
+                            add = "reg.line",  # Add regressin line
+                            add.params = list(color = "blue", fill = "lightgray"),
+                            conf.int = TRUE # Add confidence interval
+  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  
+  # age group: 25-64
+  bcg_25_to_64 <- ggscatter(data=x, x = "percent_BCG_25_to_64", y = var,
+                            xlab = "BCG coverage, 25-64 years",
+                            add = "reg.line",  # Add regressin line
+                            add.params = list(color = "blue", fill = "lightgray"),
+                            conf.int = TRUE # Add confidence interval
+  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  
+  # age group: 65+
+  bcg_over_65 <- ggscatter(data=x, x = "percent_BCG_over_65", y = var,
+                           xlab = "BCG coverage, above 65 years",
+                           ylab = "Deaths per 1M",
+                           add = "reg.line",  # Add regressin line
+                           add.params = list(color = "blue", fill = "lightgray"),
+                           conf.int = TRUE # Add confidence interval
+  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  
   # female share
   gscatter_female_share <- ggscatter(data=x, x = "female_share", y = var,
                                 xlab = "female_share",
@@ -559,9 +585,10 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
             gscatter_25_to_64, gscatter_over_65,gscatterHIV,
             gscatterHIV2, gscatterMinimalAssumed,gscatter_female_share, 
             gscatter_median_down, gscatter_median_up, g15,
-            MCV, RCV,
-            labels = letters[1:14],
-            ncol = 2, nrow = 7)
+            MCV, RCV, bcg_under_25, 
+            bcg_25_to_64, bcg_over_65,
+            labels = letters[1:17],
+            ncol = 2, nrow = 9)
 }
 
 get_ecdc_data <- function() {
