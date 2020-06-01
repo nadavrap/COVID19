@@ -379,32 +379,6 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
     comp <- lapply(comp, function(i) i[[1]])
   }
   
-  #comp <- lapply(1:2, function(i) lapply((i+1):3, function(j) c(i,j)))
-  #levels(x$BCG2Groups) <- gsub(" ", "\n", levels(x$BCG2Groups))
-  #g1 <- ggboxplot(x, x = "BCG2Groups", y = var, color = "BCG2Groups", add = c("jitter"), palette = "jco") +
-  # g1 <- ggboxplot(x, x = "BCG_for_all", y = var, color = "BCG_for_all", add = c("jitter"), palette = "jco") + 
-  #   stat_compare_means() +
-  #   theme(legend.position = "none")
-  #, plot.margin = unit(c(1,1,1,1), "lines")
-  # g2 <- ggboxplot(x, x = "BCG3Groups", y = var, color = "BCG3Groups", add = c("jitter"), palette = "jco") + 
-  #   stat_compare_means(label.y = min(x[,var])) + 
-  #   stat_compare_means(comparisons = comp_list(nlevels(x$BCG3Groups)),
-  #                      label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
-  #   theme(legend.position = "none") +
-  #   #, plot.margin = unit(c(2,0,0,0), "lines")
-  #   expand_limits(y=max(x[,var])*1.2)
-  # g3 <- ggboxplot(x, x = "TBcases5Groups", y = var, color = "TBcases5Groups", add = c("jitter"), palette = "jco") +
-  #   stat_compare_means(label.y = min(x[,var])) +
-  #   stat_compare_means(comparisons = comp_list(nlevels(x$TBcases5Groups)),
-  #                      label.y = max(x[,var])*c(.9,1,.8,1.1,.95)) +
-  #   theme(legend.position = "none")+
-  #   expand_limits(y=max(x[,var])*1.2)
-  
-  # g5 <- ggboxplot(x, x = "TB_high", y = var, color = "TB_high", add = c("jitter"), palette = "jco") +
-  #   stat_compare_means() +
-  #   theme(legend.position = "none")+
-  #   expand_limits(y=max(x[,var])*1.2)
-  
   # Correlated BCG administration years with outcome
   names(x)[names(x) == "BCG administration years"] <- "BCG_administration_years"
   ytitle <- ifelse(var == 'total_deaths_per_1M', 'DPM diff',
@@ -536,8 +510,6 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   # MCV vaccine
   MCV <- ggboxplot(x, x = "MCV_group", y = var, color = "MCV_group", add = c("jitter"), palette = "jco") + 
     stat_compare_means() +
-    #stat_compare_means(comparisons = comp_list(nlevels(x$MCV_group)),
-    #                   label.y = max(x[,var])*c(.9,1,.8,1.1,1)) +
     theme(legend.position = "none") +
     ylab(ytitle) + 
     expand_limits(y=max(x[,var])*1.2) 
@@ -817,7 +789,7 @@ get_regression_plot_only <- function(val_align=.5,
   outcome_plot(x, var = var_outcome, bcg_years_plot_only = TRUE)
 }
 
-fig2 <- function() {
+fig1 <- function() {
   days <- 20
   g1 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
                                  var_outcome='total_deaths_per_1M',days_outcome=days) +
@@ -835,7 +807,7 @@ fig2 <- function() {
             ncol = 2, nrow = 2, labels = letters[1:4]) + 
     theme(rect = element_rect(fill = "transparent")) # all rectangles
   #ggsave('./Figures/Fig2.eps', width = 9, height = 9)
-  ggsave('./Figures/Fig2.pdf', width = 9, height = 9,  bg = "transparent")
+  ggsave('./Figures/Fig1.pdf', width = 9, height = 9,  bg = "transparent")
 }
 
 fig4 <- function() {
@@ -874,6 +846,17 @@ fig5 <- function() {
                return_figure = 5)
   #ggsave('./Figures/Fig5.eps', width=9, height = 9)
   ggsave('./Figures/Fig5.pdf', width=12, height = 4)
+  
+  t1 <- as.data.frame(do.call(rbind, tapply(x$total_deaths_per_1M, x$RCV_group, quantile)))
+  t1$Var <- 'RCV'
+  t2 <- as.data.frame(do.call(rbind, tapply(x$total_deaths_per_1M, x$MCV_group, quantile)))
+  t2$Var <- 'MCV'
+  t3 <- as.data.frame(do.call(rbind, tapply(x$total_deaths_per_1M, x$vaccinated_15_y, quantile)))
+  t3$Var <- 'BCG'
+  t1 <- rbind(t1, t2, t3)
+  t1$`0%` <- t1$`100%` <- NULL
+  names(t1) <- c('QR1', 'Median', 'QR3', 'Var')
+  write.csv(t1, './Figures/Fig5_IQRs.csv')
 }
 
 fig7 <- function() {
