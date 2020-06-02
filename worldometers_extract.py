@@ -138,8 +138,7 @@ def filter_and_check_columns(table):
 
 def process_table(table: pd.DataFrame):
     table = filter_and_check_columns(table)
-    mini_table = table[table.columns[1:]].to_numpy().astype(str)
-    mini_table = np.apply_along_axis(lambda i: [re.sub(NONE_NUM_CHAR, '', x) for x in i], 1, mini_table)
+    mini_table = table[table.columns[1:]].replace(NONE_NUM_CHAR, '', regex=True)
     table.loc[:, table.columns[1:]] = mini_table
 
     # adds missing columns if needed (with null information, just for unification of all tables)
