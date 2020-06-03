@@ -171,7 +171,7 @@ def check_difference(cur_date, prev_date):
     columns = ['TotalDeaths', 'TotalCases', 'TotalRecovered']
     verify = fil_cur[columns] - fil_prev[columns]
     mask = verify >= 0
-    if (mask.all(axis=None)):
+    if mask.all(axis=None):
         return True
     index = np.argwhere(np.logical_not(mask.to_numpy())).tolist()
     for row, col in index:
@@ -197,5 +197,5 @@ if __name__ == '__main__':
             df = process_table(df)
             df['Date'] = i
             df.to_csv(fname)
-            check_diffrence(i, prev)
+            check_difference(i, prev)
         prev = i
