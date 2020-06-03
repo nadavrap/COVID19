@@ -74,7 +74,10 @@ def get_site_html(url):
     try:
         # pretend to be Firefox
         req = urllib.request.Request(url,
-                                     headers={'User-Agent': 'Mozilla/5.0'})
+                                     headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) '
+                                                            'AppleWebKit/537.36 (KHTML, like Gecko) '
+                                                            'Chrome/61.0.3163.79 '
+                                                            'Safari/537.36'})
         with urllib.request.urlopen(req) as url_file:
             url_byte = url_file.read()
     except urllib.request.HTTPError as e:  # HTTP status code
@@ -157,8 +160,29 @@ def process_table(table: pd.DataFrame):
     return table
 
 
-if __name__ == '__main__':
+def check_difference(cur_date, prev_date):
+    prev_df = pd.read_csv("data/worldometer/%s.csv" % prev_date)
+    cur_df = pd.read_csv("data/worldometer/%s.csv" % cur_date)
+    country_mask = cur_df['Country,Other'].isin(prev_df['Country,Other'])
+    fil_df = cur_df.iloc[country_mask.tolist()]
+    fil_cur = fil_df.sort_values('Country,Other', axis=0).reset_index(drop=True).fillna(0)
+    fil_prev = prev_df.sort_values('Country,Other', axis=0).reset_index(drop=True).fillna(0)
 
+    columns = ['TotalDeaths', 'TotalCases', 'TotalRecovered']
+    verify = fil_cur[columns] - fil_prev[columns]
+    mask = verify >= 0
+    if (mask.all(axis=None)):
+        return True
+    index = np.argwhere(np.logical_not(mask.to_numpy())).tolist()
+    for row, col in index:
+        country = fil_cur['Country,Other'][row]
+        colum = columns[col]
+        diff = abs(int(verify.iloc[row, col]))
+        print("%s difference in %s of %s " % (diff, colum, country))
+
+
+if __name__ == '__main__':
+    prev = None
     for d in pd.date_range(start="2020-01-29", end=datetime.datetime.today()):
         i = d.strftime("%m%d")
         fname = 'data/worldometer/' + i + ".csv"
@@ -173,3 +197,5 @@ if __name__ == '__main__':
             df = process_table(df)
             df['Date'] = i
             df.to_csv(fname)
+            check_diffrence(i, prev)
+        prev = i
