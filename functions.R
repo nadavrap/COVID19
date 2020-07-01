@@ -320,6 +320,7 @@ aggregate_and_merge_countries <- function(worldometer, var, days) {
   x$Country <- NULL
   # Remove columns handwash as many NAs
   x$`handwash%` <- NULL
+  #x <- x[x$`BCG administration years` > 0,]
   x
 }
 
@@ -568,6 +569,23 @@ get_ecdc_data <- function() {
                   na.strings="", fileEncoding="UTF-8-BOM")
 }
 
+#' Test for correlations in subsamples
+#' 
+#' Given a data.frame with two columns, test for the correlation in the two
+#' in sub samples of rows.
+#' Return the fraction [0-1] of samples that the correlation's p-value was not 
+#' significant (≥ 0.05)
+#' @param x data.frame with two columns
+#' @param ntests Number of test (samples)
+#' @param sample_fraction Fraction of rows to sample for each test
+#' @return Numeric which correspond to fraction of non-significant tests
+subsample_test <- function(x, ntests=2000, sample_fration=.9) {
+  cor_res_subs <- lapply(1:ntests, function(i) {
+    tmp <- x %>% slice_sample(prop=sample_fration, replace=FALSE)
+    cor.test(tmp[,1], tmp[,2], use = 'complete.obs')$p.value
+  })
+  mean(unlist(cor_res_subs) >= 0.05)
+}
 
 get_stats <- function(covid, outcome, days, 
                       depended_var="BCG administration years",
@@ -577,9 +595,10 @@ get_stats <- function(covid, outcome, days,
   
   x <- x[,c(depended_var, outcome)]
   x <- x[complete.cases(x),]
+
   if(nrow(x) < 3) {
     cor_res <- list(estimate=NA, p.value=NA)
-    permute_pvalP <- permute_pvalS <- NA
+    permute_pvalP <- permute_pvalS <- subsample_pval <- t_test <- NA
   } else {
     cor_res <- cor.test(x[,1], x[,2], use = 'complete.obs')
     if (premute_test) {
@@ -587,12 +606,15 @@ get_stats <- function(covid, outcome, days,
       #  cor.test(x[,1], sample(x[,2]))$p.value < cor_res$p.value)))
       permute_pvalP <- perm.cor.test(x[,1], x[,2], "two.sided", "pearson", num.sim = 2000)$p.value
       #permute_pvalS <- perm.cor.test(x[,1], x[,2], "two.sided", "spearman", num.sim = 2000)$p.value
+      subsample_pval <- subsample_test(x)
+      t_test <- t.test(x[x[,1] == 0, outcome], x[x[,1] > 0, outcome])$p.value
     } else {
-      permute_pvalP <- permute_pvalS <- NA
+      permute_pvalP <- permute_pvalS <- subsample_pval <- t_test <- NA
     }
   }
   return(data.frame(cor=cor_res$estimate, pval=cor_res$p.value,n=nrow(x),
-                    Days=days, permute_pvalP=permute_pvalP))
+                    Days=days, permute_pvalP=permute_pvalP, 
+                    subsample_pval=subsample_pval, t_test_0_vs_other=t_test))
 }
 
 get_stats_table_outcome <- function(covid, outcome, 
@@ -626,6 +648,7 @@ get_stats_table <- function(var_align, val_align,
                 'total_cases_per_1M')
   #parallel::mc
   # mc.cores = parallel::detectCores()
+  #browser() # For debugging
   d <- do.call(rbind,
                lapply(outcomes, get_stats_table_outcome, covid=covid, 
                       # For plotting, there is no need for permutation test
@@ -789,7 +812,7 @@ get_regression_plot_only <- function(val_align=.5,
   outcome_plot(x, var = var_outcome, bcg_years_plot_only = TRUE)
 }
 
-fig1 <- function() {
+fig2 <- function() {
   days <- 20
   g1 <- get_regression_plot_only(val_align = .5, var_align='total_deaths_per_1M',
                                  var_outcome='total_deaths_per_1M',days_outcome=days) +
