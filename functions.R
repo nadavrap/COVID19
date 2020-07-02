@@ -432,31 +432,31 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   # Correlated BCG administration years with outcome
   # age group: 0-24
   
-  gscatter_under_25 <- ggscatter(data=x, x = "ps_under_25", y = var,
-                                 xlab = "Relative BCG coverage, below 24 years population share",
-                                 ylab = "Deaths per 1M",
-                                 add = "reg.line",  # Add regressin line
-                                 add.params = list(color = "blue", fill = "lightgray"),
-                                 conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  gscatter_under_25 <- ggplot(x, aes(ps_under_25, y=get(var))) + 
+    xlab("Relative BCG coverage, below 24 years population share") + 
+    ylab("Deaths per 1M") + 
+    geom_smooth(formula = 'y~x', method = lm) + 
+    geom_jitter(width = max(x$ps_under_25, na.rm=T)/50) + 
+    stat_cor(method = "pearson", label.x.npc = "center") + 
+    theme_classic()
   
   # age group: 25-64
-  gscatter_25_to_64 <- ggscatter(data=x, x = "ps_25_to_64", y = var,
-                                 xlab = "Relative BCG coverage, 25-64 years population share",
-                                 ylab = "Deaths per 1M",
-                                 add = "reg.line",  # Add regressin line
-                                 add.params = list(color = "blue", fill = "lightgray"),
-                                 conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")
-  
+  gscatter_25_to_64 <- ggplot(x, aes(ps_25_to_64, y=get(var))) + 
+    xlab("Relative BCG coverage, 25-64 years population share") + 
+    ylab("Deaths per 1M") + 
+    geom_smooth(formula = 'y~x', method = lm) + 
+    geom_jitter(width = max(x$ps_25_to_64, na.rm=T)/50) + 
+    stat_cor(method = "pearson", label.x.npc = "center") + 
+    theme_classic()
+    
   # age group: 65+
-  gscatter_over_65 <- ggscatter(data=x, x = "ps_over_65", y = var,
-                                xlab = "Relative BCG coverage, above 65 years population share",
-                                ylab = "Deaths per 1M",
-                                add = "reg.line",  # Add regressin line
-                                add.params = list(color = "blue", fill = "lightgray"),
-                                conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  gscatter_over_65 <- ggplot(x, aes(ps_over_65, y=get(var))) + 
+    xlab("Relative BCG coverage, above 65 years population share") + 
+    ylab("Deaths per 1M") + 
+    geom_smooth(formula = 'y~x', method = lm) + 
+    geom_jitter(width = max(x$ps_over_65, na.rm=T)/50) + 
+    stat_cor(method = "pearson", label.x.npc = "center") + 
+    theme_classic()
 
   # age group: 0-24
   
