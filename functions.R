@@ -398,6 +398,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   #names(x)[names(x) == "Active_TB_%"] <- "Percents_Active_Tuberculosis"
   gscatterTB <- ggscatter(data=x, x = "Percents_Active_Tuberculosis", y = var,
                         add = "reg.line",  # Add regressin line
+                        ylab = ytitle,
                         add.params = list(color = "blue", fill = "lightgray"),
                         conf.int = TRUE # Add confidence interval
   ) + stat_cor(method = "pearson")#, label.x = .02, label.y = 30
@@ -406,12 +407,14 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   names(x)[names(x) == "HIV_prevalence_19-45_yo"] <- "HIV_prevalence_19_45_yo"
   gscatterHIV <- ggscatter(data=x, x = "HIV_prevalence_19_45_yo", y = var,
                           add = "reg.line",  # Add regressin line
+                          ylab = ytitle,
                           add.params = list(color = "blue", fill = "lightgray"),
                           conf.int = TRUE # Add confidence interval
   ) + stat_cor(method = "pearson")#, label.x = .02, label.y = 30
   
   gscatterHIV2 <- ggscatter(data=x, x = "HIV_prevalence_19_45_yo", y = var,
                            add = "reg.line",  # Add regressin line
+                           ylab = ytitle,
                            add.params = list(color = "blue", fill = "lightgray"),
                            conf.int = TRUE) + 
     xlim(0,min(max(x$HIV_prevalence_19_45_yo), 1.1)) +
@@ -421,6 +424,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   names(x)[names(x) == "BCG admin years (Imp)"] <- "BCG_years_imputed"
   gscatterMinimalAssumed <- ggscatter(data=x, x = "BCG_years_imputed", y = var,
                         add = "reg.line",  # Add regressin line
+                        ylab = ytitle,
                         add.params = list(color = "blue", fill = "lightgray"),
                         conf.int = TRUE # Add confidence interval
   ) + stat_cor(method = "pearson")#, label.x = 3, label.y = 30
@@ -434,7 +438,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   
   gscatter_under_25 <- ggplot(x, aes(ps_under_25, y=get(var))) + 
     xlab("Relative BCG coverage, below 24 years population share") + 
-    ylab("Deaths per 1M") + 
+    ylab(ytitle) + 
     geom_smooth(formula = 'y~x', method = lm) + 
     geom_jitter(width = max(x$ps_under_25, na.rm=T)/50) + 
     stat_cor(method = "pearson", label.x.npc = "center") + 
@@ -443,7 +447,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   # age group: 25-64
   gscatter_25_to_64 <- ggplot(x, aes(ps_25_to_64, y=get(var))) + 
     xlab("Relative BCG coverage, 25-64 years population share") + 
-    ylab("Deaths per 1M") + 
+    ylab(ytitle) + 
     geom_smooth(formula = 'y~x', method = lm) + 
     geom_jitter(width = max(x$ps_25_to_64, na.rm=T)/50) + 
     stat_cor(method = "pearson", label.x.npc = "center") + 
@@ -452,7 +456,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   # age group: 65+
   gscatter_over_65 <- ggplot(x, aes(ps_over_65, y=get(var))) + 
     xlab("Relative BCG coverage, above 65 years population share") + 
-    ylab("Deaths per 1M") + 
+    ylab(ytitle) + 
     geom_smooth(formula = 'y~x', method = lm) + 
     geom_jitter(width = max(x$ps_over_65, na.rm=T)/50) + 
     stat_cor(method = "pearson", label.x.npc = "center") + 
@@ -460,34 +464,36 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
 
   # age group: 0-24
   
-  bcg_under_25 <- ggscatter(data=x, x = "percent_BCG_under_25", y = var,
-                            xlab = "BCG coverage, below 24 years",                               
-                            add = "reg.line",  # Add regressin line
-                            add.params = list(color = "blue", fill = "lightgray"),
-                            conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  bcg_under_25 <- ggplot(x, aes(percent_BCG_under_25, y=get(var))) + 
+    xlab("BCG coverage, below 24 years") + 
+    ylab(ytitle) + 
+    geom_smooth(formula = 'y~x', method = lm) + 
+    geom_jitter(width = max(x$percent_BCG_under_25, na.rm=T)/50) + 
+    stat_cor(method = "pearson", label.x.npc = "center") + 
+    theme_classic()
   
   # age group: 25-64
-  bcg_25_to_64 <- ggscatter(data=x, x = "percent_BCG_25_to_64", y = var,
-                            xlab = "BCG coverage, 25-64 years",
-                            add = "reg.line",  # Add regressin line
-                            add.params = list(color = "blue", fill = "lightgray"),
-                            conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  bcg_25_to_64 <- ggplot(x, aes(percent_BCG_25_to_64, y=get(var))) + 
+    xlab("BCG coverage, 25-64 years") + 
+    ylab(ytitle) + 
+    geom_smooth(formula = 'y~x', method = lm) + 
+    geom_jitter(width = max(x$percent_BCG_25_to_64, na.rm=T)/50) + 
+    stat_cor(method = "pearson", label.x.npc = "center") + 
+    theme_classic()
   
   # age group: 65+
-  bcg_over_65 <- ggscatter(data=x, x = "percent_BCG_over_65", y = var,
-                           xlab = "BCG coverage, above 65 years",
-                           ylab = "Deaths per 1M",
-                           add = "reg.line",  # Add regressin line
-                           add.params = list(color = "blue", fill = "lightgray"),
-                           conf.int = TRUE # Add confidence interval
-  ) + stat_cor(method = "pearson", label.x.npc = "center")
+  bcg_over_65 <- ggplot(x, aes(percent_BCG_over_65, y=get(var))) + 
+    xlab("BCG coverage, above 65 years") + 
+    ylab(ytitle) + 
+    geom_smooth(formula = 'y~x', method = lm) + 
+    geom_jitter(width = max(x$percent_BCG_over_65, na.rm=T)/50) + 
+    stat_cor(method = "pearson", label.x.npc = "center") + 
+    theme_classic()
   
   # female share
   gscatter_female_share <- ggscatter(data=x, x = "female_share", y = var,
                                 xlab = "female_share",
-                                ylab = "Deaths per 1M",
+                                ylab = ytitle,
                                 add = "reg.line",  
                                 add.params = list(color = "blue", fill = "lightgray"),
                                 conf.int = TRUE 
@@ -495,6 +501,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   
   gscatter_median_down <- ggscatter(data=x, x = "median_down", y = var,
                                     xlab = "Relative BCG coverage, population below the median",
+                                    ylab = ytitle,
                                     add = "reg.line",  
                                     add.params = list(color = "blue", fill = "lightgray"),
                                     conf.int = TRUE 
@@ -503,6 +510,7 @@ outcome_plot <- function(x, var, bcg_years_plot_only=FALSE,
   # above median
   gscatter_median_up <- ggscatter(data=x, x = "median_up", y = var,
                                   xlab = "Relative BCG coverage, population above the median",
+                                  ylab = ytitle,
                                   add = "reg.line",  
                                   add.params = list(color = "blue", fill = "lightgray"),
                                   conf.int = TRUE 
