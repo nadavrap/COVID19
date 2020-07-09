@@ -9,6 +9,7 @@ library(rpart.plot)
 library(rattle) # for fancyRpartPlot function
 library(parallel)
 library(jmuOutlier) # for permutation test perm.cor.test
+library(ggtext) # for element_markdown
 source('worldometers_extract.R')
 
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
@@ -758,7 +759,7 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   # Remove percent BCG by age group
   x[,c("percent_BCG_under_25", "percent_BCG_25_to_64", "percent_BCG_over_65")] <- NULL
   
-  warning(paste(colnames(x)))
+  #warning(paste(colnames(x)))
   # Handwash has many missings
   x$handwash. <- NULL
   x <- droplevels(x[complete.cases(x),])
@@ -786,7 +787,7 @@ multi_var <- function(x, outcome, depended_var="BCG administration years",
   g <- coefplot::coefplot(res2, sort = "magnitude") + 
     geom_text(data=s,aes(x=Estimate,y=order,label=Pval),vjust=-.4, hjust=.5) +
     xlab('Beta coefficient') +
-    theme(axis.text.y = element_text(colour = s$Colour),
+    theme(axis.text.y = element_markdown(colour = s$Colour),
           axis.text=element_text(size=12,face="bold"))
   g
 }
