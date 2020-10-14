@@ -33,7 +33,7 @@ shinyUI(navbarPage("COVID19",
                     sliderInput('ylim', 'Limit Y axis', min=0, 
                                 max=max(covid$value[covid$Var=='deaths']),
                                 value=max(covid$value[covid$Var=='deaths']), 
-                                step=1, round=0),
+                                step=.25, round=0),
                     
                     checkboxInput('logscale', 'Log 10 Scale', value = FALSE),
                     selectInput("countries", "Select countries",
@@ -73,7 +73,7 @@ shinyUI(navbarPage("COVID19",
                                 "total_deaths_per_1M"),
 
                     sliderInput('ylim_plot', 'Limit Y axis', min=0, max=round(max(worldometer[,'total_deaths_per_1M'], na.rm = TRUE)),
-                                value=max(worldometer[,'total_deaths_per_1M'], na.rm=TRUE), step=1, round=0),
+                                value=max(worldometer[,'total_deaths_per_1M'], na.rm=TRUE), step=.25, round=0),
 
                     radioButtons('depended_var', 'BCG administrated years',
                                  choiceNames = c('Strict', 'Imputed'), 

@@ -15,7 +15,7 @@ source('worldometers_extract.R')
 # options(rsconnect.check.certificate = FALSE);rsconnect::deployApp()
 
 DEFAULT_MIN_VAL <- .5
-DEFAULT_DATE <- "2020-05-21"
+DEFAULT_DATE <- Sys.Date() #"2020-05-21"
 
 get_raw_data <- function() {
   # library(googlesheets)
@@ -252,6 +252,7 @@ get_worldometers_data <- function(end_date) {
   covid$start_date <- NULL
   # Add columns death+critical
   #covid$death_or_critical_perM <- covid$critical_per_1M + covid$deaths_per_1M
+  covid$tot_death_out_of_tot_cases <- covid$TotalDeaths/covid$TotalCases
   covid
 }
 

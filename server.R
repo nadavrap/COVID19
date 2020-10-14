@@ -202,12 +202,12 @@ function(input, output, session) {
     observe({
         y <- input$y
         updateSliderInput(session, "ylim", value = max(dataset()[,'value']),
-                          min = 0, max = max(dataset()[,'value']), step = 1)
+                          min = 0, max = max(dataset()[,'value']), step = .25)
     })
     observe({
         y <- input$var2plot
         updateSliderInput(session, "ylim_plot", value = round(max(worldo()[,input$var2plot], na.rm = TRUE)),
-                          min = 0, max = round(max(worldo()[,input$var2plot], na.rm = TRUE)), step = 1)
+                          min = 0, max = round(max(worldo()[,input$var2plot], na.rm = TRUE)), step = .05)
     })
     
     observe({
@@ -215,7 +215,7 @@ function(input, output, session) {
         #yval <- input$alignvalue
         max_val <- round(max(worldo()[,y], na.rm = TRUE))
         if (max_val > 1000) {
-            step <- 50
+            step <- 1
             #yval <- round(yval)
         } else {
             step <- .25
