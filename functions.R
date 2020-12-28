@@ -311,7 +311,8 @@ aggregate_and_merge_countries <- function(worldometer, var, days) {
   y <- y[order(y$Date),]
   countries_first_dates <- y[!duplicated(y$Country), c('Country', 'Date')]
   names(countries_first_dates)[2] <- 'FirstDate'
-  countries_last_dates <- y[duplicated(y$Country), c('Country', 'Date')]
+  y <- y[rev(order(y$Date)),]
+  countries_last_dates <- y[!duplicated(y$Country), c('Country', 'Date')]
   names(countries_last_dates)[2] <- 'LastDate'
   agg <- aggregate(as.formula(paste(var, '~ Country')), y, function(x) max(x)-min(x))
   x <- get_Danielle_data()

@@ -38,7 +38,7 @@ get_worlodmeters_raw_data <- function() {
       warning(paste('Could not run worldometes_extract.py,',
                     e,
       'Returning latest version from', readLines(cache_fname_date)))
-      return(readRDS(fname))
+      if (file.exists(fname)) {return(readRDS(fname))}
     })
 
   # country_list <- c("Italy", "Belgium", "Netherlands", "Spain","France","Switzerland","Germany","Czechia",

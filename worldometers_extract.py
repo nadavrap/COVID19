@@ -185,17 +185,18 @@ if __name__ == '__main__':
     prev = None
     for d in pd.date_range(start="2020-01-29", end=datetime.datetime.today()):
         i = d.strftime("%m%d")
-        fname = 'data/worldometer/' + i + ".csv"
+        year = d.strftime("%Y")
+        fname = 'data/worldometer/' + year + i + ".csv"
         if not os.path.isfile(fname):
-            print(i)
-            url = "https://web.archive.org/web/2020%s/https://www.worldometers.info/coronavirus/" % i
+            print(year+i)
+            url = "https://web.archive.org/web/%s%s/https://www.worldometers.info/coronavirus/" % (year, i)
             # on this specific date, there is a problem with the default address
             if i == "0318":
                 url = "https://web.archive.org/web/20200318234401/https://www.worldometers.info/coronavirus/"
             web = get_web(url)
             df = get_table(web)
             df = process_table(df)
-            df['Date'] = i
+            df['Date'] = year + i
             df.to_csv(fname)
-            check_difference(i, prev)
-        prev = i
+            check_difference(year+i, prev)
+        prev = year+i
